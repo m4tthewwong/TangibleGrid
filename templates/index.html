@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tangible web design interface</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"
+            integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA=="
+            crossorigin="anonymous"></script>
+    <script type="text/javascript" charset="utf-8">
+        let socket = io();
+        socket.on('connect', function () {
+            socket.emit('web connected', 'Web page connected!');
+            socket.emit('get data');
+        });
+        socket.on("data transmit", function (data) {
+            console.log(data);
+            operation(data)
+            socket.emit('get data');
+        });
+        socket.on("pause", function () {
+            console.log("Same condition");
+            socket.emit('get data');
+        });
+
+        function operation(data) {
+            if (data.type == "add") {
+                console.log("add detected");
+                add_rect(data);
+            } else if (data.type == "del") {
+                console.log("del detected");
+                del_rect(data);
+            } else {
+                console.log("something wrong");
+            }
+        };
+
+        function add_rect(data) {
+            const c = document.getElementById("myCanvas");
+            const ctx = c.getContext("2d");
+            let row = (parseInt(data.row_num) - 1) * 130 + 10;
+            let col = (parseInt(data.col_num) - 1) * 130 + 10;
+            let len_h = parseInt(data.h_len) * 130 - 20;
+            let len_w = parseInt(data.w_len) * 130 - 20;
+            if (data.bracket == "text") {
+                ctx.fillStyle = "#647C90"; //Text
+            } else if (data.bracket == "figure") {
+                ctx.fillStyle = "#E2DED0"; //Figure
+            } else if (data.bracket == "video") {
+                ctx.fillStyle = "#4E4F50"; //Video
+            } else {
+                ctx.fillStyle = "#FFFFFF"; // White Color
+            }
+            ctx.fillRect(col, row, len_w, len_h);
+            if (data.bracket == "text") {
+                ctx.font = "12px Arial";
+                ctx.fillStyle = "black";
+                ctx.fillText(data.text_input, (col + (col + len_w))/2, (row + (row + len_h))/2);
+            }
+        };
+
+        function del_rect(data) {
+            const c = document.getElementById("myCanvas");
+            const ctx = c.getContext("2d");
+            let row = (parseInt(data.row_num) - 1) * 130 + 10;
+            let col = (parseInt(data.col_num) - 1) * 130 + 10;
+            let len_h = parseInt(data.h_len) * 130 - 20;
+            let len_w = parseInt(data.w_len) * 130 - 20;
+            ctx.fillStyle = "#FFFFFF"; // White Color
+            ctx.fillRect(col, row, len_w, len_h);
+        };
+    </script>
+
+</head>
+<body>
+<canvas id="myCanvas" width="1560" height="2080" style="border:6px solid #746C70;">
+    Your browser does not support the HTML5 canvas tag.
+</canvas>
+</body>
+</html>
