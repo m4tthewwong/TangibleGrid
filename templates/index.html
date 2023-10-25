@@ -8,20 +8,9 @@
             crossorigin="anonymous"></script>
     <script type="text/javascript" charset="utf-8">
         let socket = io();
-        socket.on('connect', function () {
-            socket.emit('web connected', 'Web page connected!');
-            socket.emit('get data');
-        });
-        socket.on("data transmit", function (data) {
-            console.log(data);
-            operation(data)
-            socket.emit('get data');
-        });
-        socket.on("pause", function () {
-            console.log("Same condition");
-            socket.emit('get data');
-        });
-
+        
+        // ----------------------------------------------------------------
+        /* Adding/deleting brackets */
         function operation(data) {
             if (data.type == "add") {
                 console.log("add detected");
@@ -43,18 +32,63 @@
             let len_w = parseInt(data.w_len) * 130 - 20;
             if (data.bracket == "text") {
                 ctx.fillStyle = "#647C90"; //Text
+                ctx.fillRect(col, row, len_w, len_h);
+                // Start with a font size of 1px
+                let fontSize = 1;
+                ctx.font = fontSize + 'px Arial';
+                let textWidth = ctx.measureText(data.info).width;
+
+                if (data.info == "") {
+                    c.onclick = function(e) {
+                        var x = col + len_w / 2;
+                        var y = row + len_h / 2;
+                        
+                        var input = document.createElement('input');
+                        input.type = 'text';
+                        input.style.position = 'fixed';
+                        input.style.left = x + 'px';
+                        input.style.top = y + 'px';
+                        document.body.appendChild(input);
+                        input.focus();
+                    
+                        input.addEventListener('keydown', function(e) {
+                            if (e.key === 'Enter') {
+                                data.info = this.value;
+                    
+                                // Increase the font size until the text is as wide or as tall as the rectangle
+                                while (textWidth < len_w && fontSize < len_h) {
+                                    fontSize++;
+                                    ctx.font = fontSize + 'px Arial';
+                                    textWidth = ctx.measureText(data.info).width;
+                                }
+                                ctx.fillStyle = "#000000";
+                                ctx.textBaseline = 'top';
+                                ctx.fillText(data.info, col + 10, row + 10, len_w - 10);
+                    
+                                document.body.removeChild(this);
+                            }
+                        });
+                    }                    
+                } else {
+                    // Increase the font size until the text is as wide or as tall as the rectangle
+                    while (textWidth < len_w && fontSize < len_h) {
+                        fontSize++;
+                        ctx.font = fontSize + 'px Arial';
+                        textWidth = ctx.measureText(data.info).width;
+                    }
+                    ctx.fillStyle = "#000000";
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(data.info, col + 10, row + 10, len_w - 10);
+                }
             } else if (data.bracket == "figure") {
                 ctx.fillStyle = "#E2DED0"; //Figure
+                ctx.fillRect(col, row, len_w, len_h);
             } else if (data.bracket == "video") {
                 ctx.fillStyle = "#4E4F50"; //Video
+                ctx.fillRect(col, row, len_w, len_h);
             } else {
                 ctx.fillStyle = "#FFFFFF"; // White Color
-            }
-            ctx.fillRect(col, row, len_w, len_h);
-            if (data.bracket == "text") {
-                ctx.font = "12px Arial";
-                ctx.fillStyle = "black";
-                ctx.fillText(data.text_input, (col + (col + len_w))/2, (row + (row + len_h))/2);
+                ctx.fillRect(col, row, len_w, len_h);
             }
         };
 
@@ -68,12 +102,28 @@
             ctx.fillStyle = "#FFFFFF"; // White Color
             ctx.fillRect(col, row, len_w, len_h);
         };
+        // ----------------------------------------------------------------
+
+        socket.on('connect', function () {
+            socket.emit('web connected', 'Web page connected!');
+            socket.emit('get data');
+        });
+        
+        socket.on("data transmit", function (data) {
+            console.log(data);
+            operation(data);
+            socket.emit('get data');
+        });
+        socket.on("pause", function () {
+            console.log("Same condition");
+            socket.emit('get data');
+        });
     </script>
 
 </head>
 <body>
 <canvas id="myCanvas" width="1560" height="2080" style="border:6px solid #746C70;">
-    Your browser does not support the HTML5 canvas tag.
+        Your browser does not support the HTML5 canvas tag.
 </canvas>
 </body>
 </html>

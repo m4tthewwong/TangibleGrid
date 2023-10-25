@@ -61,20 +61,6 @@ int store_text_bracket_num = 0;
 int store_figure_bracket_num = 0;
 int store_total_bracket_num = 0;
 
-String user_input = "";
-String text_bracket_info[10];
-String find_text_info[2];
-String store_text_info[2];
-int num_text_brackets = 0;
-int first_text_x = 0;
-int first_text_y = 0;
-int second_text_x = 0;
-int second_text_y = 0;
-bool swapped = false;
-
-
-//HashMap<Integer, String> text_bracket_info = new HashMap<Integer, String>();
-
 // -----------------------------------------------------------------------//
 // Notes: Row 10, Column 11 pin is broken, Here I force it to be correct data (180), 
 //        so that block only can read figure bracket information. 
@@ -98,16 +84,18 @@ void loop() {
   // put your main code here, to run repeatedly:
   reset_parameters();
   detect();
-  show_matrix();  // Test Code
+  //show_matrix();  // Test Code
   process_data();
   // Serial.println("----------Send brackets ---------");
   send_data();
   // Serial.println("----------DEL brackets ----------");
   delete_data();
   store_data();
-  show_bracket();  // Test Code
+  // show_bracket();  // Test Code
   delay(1500);
 }
+
+
 
 
 // -----------------------------------------------------------------//
@@ -144,7 +132,6 @@ void reset_parameters() {
   reset_find_array_bracket();
   reset_current_onboard_num();
   resetdigitalPins();
-  resetTextInfo();
 }
 
 void  reset_find_array_bracket() {
@@ -179,11 +166,6 @@ void resetdigitalPins() {
   digitalWrite(rowPins[14], LOW);
   digitalWrite(rowPins[15], LOW);
 }
-
-void resetTextInfo() {
-  user_input = "";
-}
-
 //-------------------End Reset Section------------------------- //
 
 
@@ -251,9 +233,6 @@ void find_text(int i, int n) {
     int temp_row_number = i + 1;
     int temp_col_number = n + 1;
     matrix_array[i][n] = 0;                                        // Make location to Zero, prevent double counting
-    String temp_bracket = "";
-    String bracket_text = "";
-    String temp = "";
 
     for (n2 = n + 1; n2 < COLS; n2++) {                            //Find same row second location
       if (matrix_array[i][n2] > 75 && matrix_array[i][n2] < 125) {
@@ -265,63 +244,16 @@ void find_text(int i, int n) {
             matrix_array[i2][n] = 0;                                                          // Make location to Zero, prevent double counting
             if (matrix_array[i2][n2] > 75 && matrix_array[i2][n2] < 125) {                        //Check all four corners are correct
               matrix_array[i2][n2] = 0;
-
-
-
-              if (text_bracket_info[text_bracket_num] == "") {
-                // Prompt user for input and store it in the bracket
-                Serial.println("Enter text:");
-                while (Serial.available() == 0) {
-                  // Wait for user input
-                }
-                String text_input = Serial.readString();
-                text_input.trim();
-                text_bracket_info[text_bracket_num] = text_input;
-
-                // Save position of first text bracket
-                if (num_text_brackets == 0) {
-                  first_text_x = temp_row_number;
-                  first_text_y = temp_col_number;
-                }
-
-                // Save position of second text bracket
-                if (num_text_brackets == 1) {
-                  second_text_x = temp_row_number;
-                  second_text_y = temp_col_number;
-                }
-                
-                // Runs when the second text bracket is iterated throuogh first
-                if ((num_text_brackets > 1) && (swapped == false)) {
-                  if ((first_text_x > second_text_x) || ((first_text_x == second_text_x) && (first_text_y > second_text_y))) {
-                    temp = text_bracket_info[0];
-                    text_bracket_info[0] = text_bracket_info[1];
-                    text_bracket_info[1] = temp;
-                    swapped = true;
-                  }
-                }
-
-                temp_bracket = "{\"type\":\"add\",\"bracket\":\"text\",\"x\":" + String(temp_row_number) + ",\"y\":" + \
-                                      String(temp_col_number) + ",\"h\":" + String(temp_col_length) + ",\"w\":" + \
-                                      String(temp_row_length) + ",\"text_input\":\"" + text_input + "}";
-                bracket_text = text_input;
-              } else {
-                temp_bracket = "{\"type\":\"add\",\"bracket\":\"text\",\"x\":" + String(temp_row_number) + ",\"y\":" + \
-                                      String(temp_col_number) + ",\"h\":" + String(temp_col_length) + ",\"w\":" + \
-                                      String(temp_row_length) + ",\"text_input\":\"" + text_bracket_info[text_bracket_num] + "}";
-                bracket_text = text_bracket_info[text_bracket_num];
-              }               
-
-
-              num_text_brackets = num_text_brackets + 1;
+              String temp_bracket = "{\"type\":\"add\",\"bracket\":\"text\",\"x\":" + String(temp_row_number) + ",\"y\":" + \
+                                    String(temp_col_number) + ",\"h\":" + String(temp_col_length) + ",\"w\":" + \
+                                    String(temp_row_length) + "}";
               text_bracket_num = text_bracket_num + 1;
               if (text_bracket_num == 1) {
                 find_bracket_text[0] = temp_bracket;
-                find_text_info[0] = bracket_text;
                 break;
               }
               else if (text_bracket_num == 2) {
                 find_bracket_text[1] = temp_bracket;
-                find_text_info[1] = bracket_text;
                 break;
               }
               else {
@@ -433,8 +365,6 @@ void store_data() {
   store_figure_bracket_num = figure_bracket_num;
   store_total_bracket_num = total_bracket_num;
 
-  store_text_info[0] = find_text_info[0];
-  store_text_info[1] = find_text_info[1];
 
 }
 //--------------------------End of Store Data-------------------//
@@ -551,32 +481,12 @@ void delete_text() {
   if (store_text_bracket_num > text_bracket_num) {
     switch (text_bracket_num) {
       case 1:
-        if (store_bracket_text[0] == find_bracket_text[0]) { // second bracket got deleted //
+        if (store_bracket_text[0] == find_bracket_text[0]) {
           store_bracket_text[1].replace("add", "del" );
-          find_bracket_text[1].replace(find_text_info[1], "");
-          store_bracket_text[1].replace(find_text_info[1], "");
-          find_bracket_text[1].replace(find_text_info[0], "");
-          store_bracket_text[1].replace(find_text_info[0], "");
-          if (swapped) {
-            text_bracket_info[0] = text_bracket_info[1];
-            text_bracket_info[1] = "";
-          } else {
-            text_bracket_info[1] = "";
-          }
           Serial.println(store_bracket_text[1]);
         }
-        else if (store_bracket_text[1] == find_bracket_text[0]) { // first bracket got deleted // 
+        else if (store_bracket_text[1] == find_bracket_text[0]) {
           store_bracket_text[0].replace("add", "del" );
-          find_bracket_text[0].replace(find_text_info[0], "");
-          store_bracket_text[0].replace(find_text_info[0], "");
-          find_bracket_text[0].replace(find_text_info[1], "");
-          store_bracket_text[0].replace(find_text_info[1], "");
-          if (swapped) {
-            text_bracket_info[1] = "";
-          } else {
-            text_bracket_info[0] = text_bracket_info[1];
-            text_bracket_info[1] = "";
-          }
           Serial.println(store_bracket_text[0]);
         }
         else {
@@ -585,9 +495,6 @@ void delete_text() {
         break;
       case 0:
         store_bracket_text[0].replace("add", "del" );
-        find_bracket_text[0].replace(find_text_info[0], "");
-        store_bracket_text[0].replace(find_text_info[0], "");
-        text_bracket_info[0] = "";
         Serial.println(store_bracket_text[0]);
         break;
       default:
