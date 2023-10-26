@@ -13,10 +13,10 @@ app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins='*')
 #serialPort = "/dev/cu.usbserial-14120"
-#REMOVE WHEN TESTING START
+# COMMENT FOR FAKE SERIAL ----------------------------------------------------------------
 #serialPort = "COM4"
 #ser = serial.Serial(serialPort, baudrate=9600, timeout=0.5)
-#REMOVE WHEN TESTING END
+# COMMENT FOR FAKE SERIAL ----------------------------------------------------------------
 engine = pyttsx3.init()
 engine.say("System initialize")
 engine.runAndWait()
@@ -43,7 +43,7 @@ def handle_button_pressed():
     r = sr.Recognizer()
     with sr.Microphone() as source:
         print("Recording...")
-        audio_data = r.record(source, duration=5)  # record audio for 5 seconds
+        audio_data = r.record(source, duration=10)  # record audio for certain number of seconds
         print("Recording finished. Converting speech to text...")
         try:
             text = r.recognize_google(audio_data)
@@ -52,7 +52,18 @@ def handle_button_pressed():
             print("Speech Recognition could not understand the audio")
             text = ""
         return text
-
+        
+@socketio.on('save info')
+def handle_save_info(data):
+    info = data.get('info')
+    type = data.get('type')
+    bracket = data.get('bracket')
+    row_num = data.get('row_num')
+    col_num = data.get('col_num')
+    h_len = data.get('h_len')
+    w_len = data.get('w_len')
+    data_list[f"{type}, {bracket}, {row_num}, {col_num}, {h_len}, {w_len}"] = info
+    
 @socketio.on('get data')
 def send_data():
     print("Receive data request from web.")
@@ -60,15 +71,17 @@ def send_data():
     # ser = serial.Serial(serialPort, baudrate=9600, timeout=0.5)
     # while ser.is_open:
     
-    # TEST CASE START
+    # UNCOMMENT FOR FAKE SERIAL ----------------------------------------------------------------
     str_json = """{"type":"add", "bracket":"text", "x":3, "y":3, "h":4, "w":4, "info":""}"""
     #{"type":"del", "bracket":"text", "x":3, "y":3, "h":4, "w":4}
-    # TEST CASE END
+    # UNCOMMENT FOR FAKE SERIAL ----------------------------------------------------------------
     
+    # COMMENT FOR FAKE SERIAL ----------------------------------------------------------------
     #raw_data = ser.readline()
     #print("raw data from arduino: ", raw_data)
     #str_json = str(raw_data, encoding='utf-8')
     #print("string data: ", str_json)
+    # COMMENT FOR FAKE SERIAL ----------------------------------------------------------------
     if str_json:
         if "type" in str_json:
             json_data = json.loads(str_json)

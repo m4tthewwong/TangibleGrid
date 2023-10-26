@@ -54,6 +54,8 @@
                         input.addEventListener('keydown', function(e) {
                             if (e.key === 'Enter') {
                                 data.info = this.value;
+                                // Send data to the server
+                                socket.emit('save info', data);
                     
                                 // Increase the font size until the text is as wide or as tall as the rectangle
                                 while (textWidth < len_w && fontSize < len_h) {
