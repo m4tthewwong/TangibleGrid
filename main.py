@@ -9,8 +9,11 @@ import pyttsx3
 import speech_recognition as sr
 import openai
 import threading
+from dotenv import load_dotenv
+import os
 
-openai.api_key = "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"
+load_dotenv()
+openai.api_key = os.getenv("API_KEY")
 
 app = Flask(__name__)
 CORS(app)
