@@ -8,26 +8,53 @@ socket.on('connect', function () {
 
 // Listen for data transmit events from the server
 socket.on("data transmit", function(data) {
-    socket.emit('web connected', 'Debugging data transmit!!!!!!!');
+    socket.emit('web connected', 'Data transmit received!');
     let id = data.id;
     console.log('Data received:', data);
-    if(data.type === 'add' && data.bracket === 'text') {
-        // If it exists and the delete flag is not set, prompt the user
-        if (window.oldEditors[id]) { /* Fix up this part...we need to keep the text */
-            let userChoice = confirm("A text bracket already exists. Click 'OK' to keep the existing text, or 'Cancel' to add new text.");
-            if (!userChoice) {
-                // The user chose to add new text, delete the old editor
-                deleteTextbox(id);
+
+    switch (data.type) {
+        case 'add':
+            switch (data.bracket) {
+                case 'text':
+                    // If it exists and the delete flag is not set, prompt the user
+                    if (window.oldEditors[id]) { /* Fix up this part...we need to keep the text */
+                        let userChoice = confirm("A text bracket already exists. Click 'OK' to keep the existing text, or 'Cancel' to add new text.");
+                        if (!userChoice) { // The user chose to add new text, delete the old editor
+                            deleteTextbox(id);
+                        }
+                    }
+                    createTextbox(data.x, data.y, data.h, data.w, id);
+                    break;
+                case 'figure':
+                    createImageBox(data.x, data.y, data.h, data.w, id);
+                    break;
+                case 'video':
+                    createVideoBox(data.x, data.y, data.h, data.w, id);
+                    break;
+                default:
+                    console.log('Unknown bracket type for add');
             }
-        }
-        createTextbox(data.x, data.y, data.h, data.w, id);
-    } else if (data.type === 'add' && data.bracket === 'figure') {
-        createImageBox(data.x, data.y, data.h, data.w);
-    } else if (data.type === 'add' && data.bracket === 'video') {
-        createVideoBox(data.x, data.y, data.h, data.w);
-    } else if (data.type === 'delete' && data.bracket === 'text') {
-        console.log('Textbox deleting')
-        deleteTextbox(id);
+            break;
+        case 'delete':
+            switch (data.bracket) {
+                case 'text':
+                    console.log('Textbox deleting');
+                    deleteTextbox(id);
+                    break;
+                case 'figure':
+                    console.log('Image box deleting');
+                    deleteImageBox(id);
+                    break;
+                case 'video':
+                    console.log('Video box deleting');
+                    deleteVideoBox(id);
+                    break;
+                default:
+                    console.log('Unknown bracket type for delete');
+            }
+            break;
+        default:
+            console.log('Unknown data type');
     }
 });
 
@@ -49,13 +76,8 @@ var toolbarOptions = [
 ];
 
 var toolbar = document.getElementById('toolbar');
-//toolbar.addEventListener('click', function() {
-    //if (window.activeEditor) {
-        //window.activeEditor.getModule('toolbar').handlers['bold']();
-        //// Add similar lines for other toolbar functions you want to support
-    //}
-//});
 
+/* Record button */
 document.getElementById('start-record-btn').addEventListener('click', function() {
     var SpeechRecognition = SpeechRecognition || webkitSpeechRecognition;
     var recognition = new SpeechRecognition();
@@ -146,10 +168,8 @@ function updateEditorStyles() {
     Object.keys(window.editors).forEach(id => {
         const editorElement = window.editors[id].container.firstChild;
         if (id === window.activeEditorId) {
-            // Apply a distinct style to the active editor
             editorElement.style.border = '2px solid #000';
         } else {
-            // Reset style for inactive editors
             editorElement.style.border = '1px solid #ccc';
         }
     });
@@ -173,8 +193,9 @@ function deleteTextbox(id) {
 
 /* --------------------------------- figure box --------------------------------- */
 
-function createImageBox(x, y, h, w) {
-    const boxId = `image-box-${Object.keys(window.editors).length}`;
+function createImageBox(x, y, h, w, id) {
+    const boxId = `image-box-${id}`;
+    //const boxId = `image-box-${Object.keys(window.editors).length}`;
     const imageBox = document.createElement('div');
     imageBox.id = boxId;
     imageBox.classList.add('image-box');
@@ -183,8 +204,6 @@ function createImageBox(x, y, h, w) {
     // Calculate position and size based on container dimensions and provided data
     const container = document.getElementById('container');
     const containerRect = container.getBoundingClientRect();
-
-    // Adjust these calculations as necessary to fit your coordinate system and scalings
 
     imageBox.style.left = `${(y / 12) * containerRect.width}px`;
     imageBox.style.top = `${(x / 16) * containerRect.height}px`;
@@ -223,10 +242,19 @@ function createImageBox(x, y, h, w) {
     container.appendChild(imageBox);
 }
 
+function deleteImageBox(id) {
+    let box = document.getElementById(`image-box-${id}`);
+    if (box) {
+        box.remove(); // This removes the image box from the DOM
+        delete window.editors[id]; // Also make sure to delete it from the editors object
+    }
+}
+
 /* --------------------------------- video box --------------------------------- */
 
-function createVideoBox(x, y, h, w) {
-    const boxId = `video-box-${Object.keys(window.editors).length}`;
+function createVideoBox(x, y, h, w, id) {
+    const boxId = `video-box-${id}`;
+    //const boxId = `video-box-${Object.keys(window.editors).length}`;
     const videoBox = document.createElement('div');
     videoBox.id = boxId;
     videoBox.classList.add('video-box');
@@ -271,3 +299,10 @@ function createVideoBox(x, y, h, w) {
     container.appendChild(videoBox); // Add the video box to the container
 }
 
+function deleteVideoBox(id) {
+    let box = document.getElementById(`video-box-${id}`);
+    if (box) {
+        box.remove(); // This removes the video box from the DOM
+        delete window.editors[id]; // Also make sure to delete it from the editors object
+    }
+}

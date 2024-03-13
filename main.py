@@ -37,101 +37,70 @@ def index():
 @socketio.on('web connected')
 def handle_my_custom_event(message):
     print(str(message))
+    
+# Helper function to emit data and manage existing brackets
+def manage_bracket(data, action):
+    bracket_id = data["id"]
+    
+    if action == "add":
+        if bracket_id in existing:
+            return False  # Already exists, no action taken
+        existing.add(bracket_id)
+    elif action == "delete":
+        existing.discard(bracket_id)  # Remove if exists, otherwise do nothing
+    
+    # Emit the data to the connected client
+    socketio.emit("data transmit", data)
+    socketio.sleep(0)
+    return True  # Action was taken
 
 @socketio.on('get data')
 def send_data():
     print("Receive data request from web.")
-    
     while ser.is_open:
         raw_data = ser.readline()
-        line = str(raw_data, encoding='utf-8')
-        if line:
-            data = json.loads(line)
-            print(data)
-            if data["touch"]: # bracket being touched meaning it will be added/deleted/moved
-                # Get data
-                id = data["ID"]
-                type = data["type"]
-                bracket = data["bracket"]
-                x = data["x"]
-                y = data["y"]
-                h = data["h"]
-                w = data["w"]
-                touch = data["touch"]
-                if type == "add":
-                    # code to add bracket
-                    if bracket == "text":
-                        if id in existing:
-                            return
-                        socketio.emit("data transmit", {
-                            "id": id,
-                            "type": type,
-                            "bracket": bracket,
-                            "x": x,
-                            "y": y,
-                            "h": h,
-                            "w": w,
-                            "touch": touch,
-                        })
-                        existing.add(id)
-                    elif bracket == "figure":
-                        if id in figure_information: # figure bracket used to exist
-                            return # fix later
-                        else:
-                            if id in existing:
-                                return
-                            socketio.emit("data transmit", {
-                                "id": id,
-                                "type": type,
-                                "bracket": bracket,
-                                "x": x,
-                                "y": y,
-                                "h": h,
-                                "w": w,
-                                "touch": touch,
-                            })
-                            existing.add(id)
-                    elif bracket == "video":
-                        if id in video_information: # video bracket used to exist
-                            return # fix later
-                        else:
-                            if id in existing:
-                                return
-                            socketio.emit("data transmit", {
-                                "id": id,
-                                "type": type,
-                                "bracket": bracket,
-                                "x": x,
-                                "y": y,
-                                "h": h,
-                                "w": w,
-                                "touch": touch,
-                            })
-                            existing.add(id)
-                else: # type == "delete"
-                    # save information about bracket
-                    if bracket == "text":
-                        text_information[id] = "" # change later to actual text
-                    elif bracket == "figure":
-                        figure_information[id] = "" # change later to actual figure
-                    else: # video
-                        video_information[id] = "" # change later to actual video
-                    emit("data transmit", {
-                        "id": id,
-                        "type": type,
-                        "bracket": bracket,
-                        "x": x,
-                        "y": y,
-                        "h": h,
-                        "w": w,
-                        "touch": touch,
-                    })
-                    existing.remove(id)
-            else: # not touched
-                return # fix later
-        else: # waiting for response from arduino
+        line = str(raw_data, encoding='utf-8').strip()
+        if not line:
             print("Waiting for response from arduino")
-        #time.sleep(2)
+            socketio.sleep(0)
+            continue  # Skip the rest of the loop and wait for more data
+        
+        data = json.loads(line)
+        print(data)
+        bracket_id = data["ID"]
+        bracket_type = data["type"]
+        bracket_category = data["bracket"]
+        touch_status = data["touch"]
+
+        # Check if the bracket is being touched, indicating it should be added/deleted/moved
+        if touch_status:
+            # Build the data dictionary for the emit function
+            emit_data = {
+                "id": bracket_id,
+                "type": bracket_type,
+                "bracket": bracket_category,
+                "x": data["x"],
+                "y": data["y"],
+                "h": data["h"],
+                "w": data["w"],
+                "touch": touch_status,
+            }
+            # Depending on the type of bracket, perform the action and emit data
+            if bracket_type == "add":
+                if not manage_bracket(emit_data, action="add"):
+                    continue  # Skip to the next iteration if no action was taken
+            elif bracket_type == "delete":
+                # Save or update the bracket information before deleting
+                if bracket_category == "text":
+                    text_information[bracket_id] = ""  # Replace with actual text retrieval logic
+                elif bracket_category == "figure":
+                    figure_information[bracket_id] = ""  # Replace with actual figure retrieval logic
+                elif bracket_category == "video":
+                    video_information[bracket_id] = ""  # Replace with actual video retrieval logic
+                
+                manage_bracket(emit_data, action="delete")
+                
+        time.sleep(5)
 
 if __name__ == '__main__':
     socketio.run(app)
