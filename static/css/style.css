@@ -1,0 +1,42 @@
+.editor {
+    /* Initial styles for editor */
+    min-width: 300px;
+    height: 100px;
+    background-color: #fff;
+    box-sizing: border-box;
+}
+
+.editor-focused {
+    /* Additional class for focused editor */
+    border: 2px solid #000; /* Bolded outline for focused editor */
+}
+
+#toolbar {
+    margin-bottom: 20px; /* Space between the toolbar and the container */
+}
+
+#container {
+    width: 95%; /* Nearly fills the width of the webpage */
+    height: 0; /* Initially set to 0 */
+    padding-bottom: 126.67%; /* Height is 16/12 = 1.3333 times the width, but we adjust for the width percentage of the container */
+    position: relative; /* Needed for absolute positioning of textboxes */
+    margin: 0 auto; /* Center the container */
+    border: 2px solid black; /* Black outline */
+    box-sizing: border-box; /* Include border in the width and height calculations */
+}
+
+.image-box {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.video-box {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+
