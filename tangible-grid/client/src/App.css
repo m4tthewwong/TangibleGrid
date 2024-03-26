@@ -44,6 +44,6 @@
     padding-bottom: 126.67%; /* Height is 16/12 = 1.3333 times the width (95%) */
     position: relative;
     margin: 0 auto;
-    border: 2px solid black;
+    border: 5px solid grey;
     box-sizing: border-box;
 }

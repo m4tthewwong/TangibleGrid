@@ -34,12 +34,13 @@ const App = () => {
                         h: Number(parsed.h),
                         w: Number(parsed.w),
                     }));
-                    setArduinoDataArray(prevData => { // Supposed to be logic to add or remove textboxes based on type (not working)
+                    setArduinoDataArray(prevData => {
                         return newData.reduce((acc, currData) => {
-                            if (currData.type === "add") {
+                            const existingIndex = acc.findIndex(item => item.ID === currData.ID);
+                            if (currData.type === "add" && existingIndex === -1) {
                                 acc.push(currData);
-                            } else if (currData.type === "delete") {
-                                return acc.filter(item => item.ID !== currData.ID); 
+                            } else if (currData.type === "delete" && existingIndex !== -1) {
+                                acc.splice(existingIndex, 1);
                             }
                             return acc;
                         }, [...prevData]);

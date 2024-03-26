@@ -22,7 +22,7 @@ const Imagebox = ({ data, containerDimensions }) => {
         top: `${(data.x / 16) * containerDimensions.height}px`,
         width: `${(data.w / 12) * containerDimensions.width}px`,
         height: `${(data.h / 16) * containerDimensions.height}px`,
-        border: '1px solid black',
+        border: '3px solid grey',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',

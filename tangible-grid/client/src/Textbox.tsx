@@ -11,7 +11,7 @@ const Textbox = ({ data, isActive, setActiveTextboxId, containerDimensions }) =>
         top: `${(data.x / 16) * containerDimensions.height}px`,
         width: `${(data.w / 12) * containerDimensions.width}px`,
         height: `${(data.h / 16) * containerDimensions.height}px`,
-        border: '1px solid black',
+        border: '3px double grey',
         padding: '10px',
         textAlign: 'left',
     };
