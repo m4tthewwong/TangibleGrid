@@ -1,0 +1,55 @@
+.toolbar {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center; /* Not working for some reason lol idk why */
+    background-color: #ffffff;
+    border-bottom: 1px solid #d1d5da;
+    box-shadow: 0 1px 3px 0 rgba(60,64,67,.2), 0 4px 8px 3px rgba(60,64,67,.15);
+    padding: 4px 8px;
+    flex-wrap: wrap;
+}
+
+.toolbar-button {
+    background-color: #f1f3f4;
+    border: 1px solid #d1d5da;
+    cursor: pointer;
+    padding: 6px 12px;
+    margin: 4px;
+    border-radius: 4px;
+    transition: background-color 0.3s, box-shadow 0.3s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 14px;
+}
+
+.toolbar-button:hover,
+.toolbar-button.active {
+    background-color: #e8eaed;
+    box-shadow: 0 1px 2px rgba(60,64,67,.3);
+}
+
+.toolbar-button:focus {
+    outline: none;
+}
+
+.toolbar-select {
+    background-color: #f1f3f4;
+    border: 1px solid #d1d5da;
+    cursor: pointer;
+    padding: 6px 8px;
+    margin: 4px;
+    border-radius: 4px;
+    transition: background-color 0.3s, box-shadow 0.3s;
+    font-size: 14px;
+}
+
+.toolbar-select:hover {
+    background-color: #e8eaed;
+    box-shadow: 0 1px 2px rgba(60,64,67,.3);
+}
+
+.toolbar-select:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, .5);
+}

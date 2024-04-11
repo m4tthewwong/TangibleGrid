@@ -1,7 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+tangible-grid/client/node_modules
+tangible-grid/server/node_modules
 /.pnp
 .pnp.js
 
