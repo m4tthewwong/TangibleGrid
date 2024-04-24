@@ -23,24 +23,36 @@ const serialPort = new SerialPort({ path: "COM3", baudRate: 9600 });
 const parser = new ReadlineParser();
 serialPort.pipe(parser);
 
-let messages = []; // Store messages in an array
-
-parser.on("data", (line) => {
-    console.log(`> ${line}`);
-    messages.push(line); // Push new lines to the messages array
-});
-
-// Endpoint to get data since lastId
-app.get("/api/data", (req, res) => {
-    const lastId = parseInt(req.query.lastId) || 0;
-    const newMessages = messages.slice(lastId); // Send all new messages
-    res.json({ data: newMessages, lastId: lastId + newMessages.length });
+// Updates the database when there is a new update from the arduino
+parser.on("data", async (line) => {
+    try {
+        await client.connect();
+        const database = client.db("TangibleGrid");
+        const collection = database.collection("Brackets");
+        const data = JSON.parse(line)[0];
+        const doc = await collection.countDocuments({
+            id: parseInt(data["id"]),
+        });
+        if ((doc == 0)) {
+            await collection.insertOne(data);
+        } else {
+            await collection.replaceOne(
+                { id: parseInt(data["id"]) },
+                data,
+                
+            );
+        }
+    } finally {
+        // Ensures that the client will close when you finish/error
+        await client.close();
+    }
 });
 
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
 });
 
+// API to get all brackets in the database on startup
 app.post("/api/init", async (req, resp) => {
     try {
         var output = [];
@@ -53,13 +65,13 @@ app.post("/api/init", async (req, resp) => {
         }
 
         resp.json(output);
-        // perform actions using client
     } finally {
         // Ensures that the client will close when you finish/error
         await client.close();
     }
 });
 
+// API to modify the content of a specific bracket on the database
 // Encode Content before passing in as param
 app.post("/api/modify/id/:id/content/:content", async (req, resp) => {
     try {
@@ -75,13 +87,13 @@ app.post("/api/modify/id/:id/content/:content", async (req, resp) => {
             }
         );
         resp.json(doc);
-        // perform actions using client
     } finally {
         // Ensures that the client will close when you finish/error
         await client.close();
     }
 });
 
+// API to watch for changes on the database
 app.post("/api/watch", async (req, resp) => {
     try {
         await client.connect();
