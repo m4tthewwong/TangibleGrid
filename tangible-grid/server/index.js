@@ -36,13 +36,20 @@ parser.on("data", async (line) => {
         const doc = await collection.countDocuments({
             id: parseInt(data["id"]),
         });
-        if ((doc == 0)) {
+        if (doc == 0) {
             await collection.insertOne(data);
         } else {
-            await collection.replaceOne(
+            await collection.updateOne(
                 { id: parseInt(data["id"]) },
-                data,
-                
+                {
+                    $set: {
+                        top_left_row: parseInt(data["top_left_row"]),
+                        top_left_col: parseInt(data["top_left_col"]),
+                        length: parseInt(data["length"]),
+                        width: parseInt(data["width"]),
+                        status: data["status"]
+                    },
+                }
             );
         }
     } finally {
