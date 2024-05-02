@@ -290,6 +290,7 @@ String update_json() {
   block["length"] = curr_bracket.length;
   block["width"] = curr_bracket.width;
   block["status"] = curr_bracket.status;
+  block["content"] = "";
 
   String output;
 
