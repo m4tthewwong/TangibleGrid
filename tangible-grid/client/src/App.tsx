@@ -8,6 +8,7 @@ import { ArduinoData } from './types'; // Type definitions
 
 const App = () => {
     const [arduinoDataArray, setArduinoDataArray] = useState<ArduinoData[]>([]);
+    const [arduinoChanges, setArduinoChanges] = useState<ArduinoData>();
     const [activeTextboxId, setActiveTextboxId] = useState<string | null>(null);
     const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
     const containerRef = useRef<HTMLDivElement>(null);
@@ -20,7 +21,6 @@ const App = () => {
                 const data = await response.json();
                 console.log(data);
                 setArduinoDataArray(data);
-                console.log(response);
             } catch (error) {
                 console.error('Failed to fetch initial data:', error);
             }
@@ -47,6 +47,7 @@ const App = () => {
                 const response = await fetch('http://localhost:3001/api/watch', { method: 'POST' });
                 const data = await response.json();
                 console.log("Data:", data);
+                setArduinoChanges(data);
                 handleDatabaseChange(data);
             } catch (error) {
                 console.error('Failed to watch for database changes:', error);
@@ -54,7 +55,7 @@ const App = () => {
         };
 
         fetchChanges();
-    }, []);
+    }, [arduinoChanges]);
 
     const handleDatabaseChange = (change) => {
         console.log("Handling database change:", change);
