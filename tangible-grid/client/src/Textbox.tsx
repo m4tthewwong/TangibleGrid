@@ -1,9 +1,37 @@
 import React, { useRef } from 'react';
 
-const Textbox = ({ data, isActive, setActiveTextboxId, containerDimensions }) => {
-    const textboxRef = useRef(null);
+interface TextboxProps {
+    data: {
+        ID: string;
+        x: number;
+        y: number;
+        h: number;
+        w: number;
+    };
+    isActive: boolean;
+    setActiveTextboxId: (id: string | null) => void;
+    containerDimensions: {
+        width: number;
+        height: number;
+    };
+    updateContent: (id: string, content: string) => void;
+}
 
-    const handleClick = () => setActiveTextboxId(data.ID);
+const Textbox: React.FC<TextboxProps> = ({ data, isActive, setActiveTextboxId, containerDimensions, updateContent }) => {
+    // Explicitly typing the ref as HTMLDivElement
+    const textboxRef = useRef<HTMLDivElement>(null);
+
+    const handleClick = () => {
+        setActiveTextboxId(data.ID);
+    };
+
+    // intended to trigger an action when the Textbox loses focus
+    const handleBlur = () => {
+        // Check if textboxRef.current is not null and update the content
+        if (textboxRef.current) {
+            updateContent(data.ID, textboxRef.current.innerText);
+        }
+    };
 
     const style: React.CSSProperties = {
         position: 'absolute',
@@ -16,7 +44,15 @@ const Textbox = ({ data, isActive, setActiveTextboxId, containerDimensions }) =>
         textAlign: 'left',
     };
 
-    return <div ref={textboxRef} style={style} contentEditable={true} onClick={handleClick}></div>;
+    return (
+        <div
+            ref={textboxRef}
+            style={style}
+            contentEditable={true}
+            onClick={handleClick}
+            onBlur={handleBlur}
+        ></div>
+    );
 };
 
 export default Textbox;

@@ -19,17 +19,20 @@ const app = express();
 app.use(cors());
 const port = 3001;
 
-const serialPort = new SerialPort({ path: "COM3", baudRate: 9600 });
+const serialPort = new SerialPort({ path: "COM4", baudRate: 9600 });
 const parser = new ReadlineParser();
 serialPort.pipe(parser);
 
 // Updates the database when there is a new update from the arduino
 parser.on("data", async (line) => {
+    console.log("Received:", line);
     try {
         await client.connect();
         const database = client.db("TangibleGrid");
         const collection = database.collection("Brackets");
         const data = JSON.parse(line)[0];
+        // const data = JSON.parse(line);
+        console.log("Parsed data:", data);
         const doc = await collection.countDocuments({
             id: parseInt(data["id"]),
         });
@@ -67,7 +70,7 @@ app.post("/api/init", async (req, resp) => {
         resp.json(output);
     } finally {
         // Ensures that the client will close when you finish/error
-        await client.close();
+        //await client.close();
     }
 });
 
@@ -108,6 +111,6 @@ app.post("/api/watch", async (req, resp) => {
         changeStream.close();
     } finally {
         // Ensures that the client will close when you finish/error
-        await client.close();
+        //await client.close();
     }
 });
