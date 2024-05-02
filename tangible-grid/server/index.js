@@ -19,7 +19,7 @@ const app = express();
 app.use(cors());
 const port = 3001;
 
-const serialPort = new SerialPort({ path: "COM4", baudRate: 9600 });
+const serialPort = new SerialPort({ path: "COM3", baudRate: 9600 });
 const parser = new ReadlineParser();
 serialPort.pipe(parser);
 
@@ -67,7 +67,7 @@ app.post("/api/init", async (req, resp) => {
             output.push(doc);
         }
 
-        resp.json(output);
+        return resp.json(output);
     } finally {
         // Ensures that the client will close when you finish/error
         //await client.close();
@@ -89,7 +89,7 @@ app.post("/api/modify/id/:id/content/:content", async (req, resp) => {
                 },
             }
         );
-        resp.json(doc);
+        return resp.json(doc);
     } finally {
         // Ensures that the client will close when you finish/error
         await client.close();
@@ -106,7 +106,7 @@ app.post("/api/watch", async (req, resp) => {
             fullDocument: "updateLookup",
         });
         for await (const change of changeStream) {
-            resp.json(change.fullDocument);
+            return resp.json(change.fullDocument);
         }
         changeStream.close();
     } finally {
