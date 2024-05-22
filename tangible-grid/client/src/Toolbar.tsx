@@ -1,7 +1,7 @@
 import React from 'react';
 import './Toolbar.css';
 
-const Toolbar: React.FC<{ activeTextboxId: string | null }> = ({ activeTextboxId }) => {
+const Toolbar: React.FC<{ activeTextboxId: number | null }> = ({ activeTextboxId }) => {
     const formatText = (command: string, value?: string) => {
         document.execCommand(command, false, value);
     };

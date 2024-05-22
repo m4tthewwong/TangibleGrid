@@ -1,11 +1,11 @@
 export interface ArduinoData {
-    ID: string;
+    id: number;
+    resistance: number;
     type: string;
-    bracket: string;
-    x: number;
-    y: number;
-    h: number;
-    w: number;
-    touch: string;
+    top_left_row: number;
+    top_left_col: number;
+    length: number;
+    width: number;
+    status: string;
   }
   

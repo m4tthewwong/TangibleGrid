@@ -9,7 +9,7 @@ import { ArduinoData } from './types'; // Type definitions
 const App = () => {
     const [arduinoDataArray, setArduinoDataArray] = useState<ArduinoData[]>([]);
     const [arduinoChanges, setArduinoChanges] = useState<ArduinoData>();
-    const [activeTextboxId, setActiveTextboxId] = useState<string | null>(null);
+    const [activeTextboxId, setActiveTextboxId] = useState<number | null>(null);
     const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -60,8 +60,8 @@ const App = () => {
     const handleDatabaseChange = (change) => {
         console.log("Handling database change:", change);
         setArduinoDataArray(prevData => {
-            const existingItem = prevData.find(item => item.ID === change.ID);
-            if (!existingItem && change.type === 'add') {
+            const existingItem = prevData.find(item => item.id === change.id);
+            if (!existingItem && change.status === 'Modified') {
                 const restore = window.confirm("Do you want to restore the previous content?");
                 if (restore) {
                     // Attempting to restore with existing content
@@ -70,8 +70,10 @@ const App = () => {
                     // Attempting to add without content
                     return [...prevData, { ...change, content: '' }];
                 }
-            } else if (change.type === 'delete') {
-                return prevData.filter(item => item.ID !== change.ID);
+            } else if (change.type === 'Added') {
+                return [...prevData, { ...change, content: '' }];
+            } else if (change.type === 'Removed') {
+                return prevData.filter(item => item.id !== change.id);
             }
             return [...prevData];
         });
@@ -94,23 +96,23 @@ const App = () => {
         <div className="App">
             <Toolbar activeTextboxId={activeTextboxId} />
             <div id="container" ref={containerRef}> {/* Add the ref */}
-                {arduinoDataArray.filter(data => data.type === "add").map((data) => { /* Only add brackets of type "add" */
-                    switch (data.bracket) {
-                        case 'text':
+                {arduinoDataArray.filter(data => data.status === "Added").map((data) => { /* Only add brackets of type "add" */
+                    switch (data.type) {
+                        case 'Text':
                             return (
                                 <Textbox
-                                    key={data.ID}
+                                    key={data.id}
                                     data={data}
-                                    isActive={data.ID === activeTextboxId}
+                                    isActive={data.id === activeTextboxId}
                                     setActiveTextboxId={setActiveTextboxId}
                                     containerDimensions={containerDimensions}
                                     updateContent={updateContentInDatabase}
                                 />
                             );
-                        case 'figure':
-                            return <Imagebox key={data.ID} data={data} containerDimensions={containerDimensions} />;
-                        case 'video':
-                            return <Videobox key={data.ID} data={data} containerDimensions={containerDimensions} />;
+                        case 'Image':
+                            return <Imagebox key={data.id} data={data} containerDimensions={containerDimensions} />;
+                        case 'Video':
+                            return <Videobox key={data.id} data={data} containerDimensions={containerDimensions} />;
                         default:
                             return null;
                     }

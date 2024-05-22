@@ -1,6 +1,20 @@
 import React, { useState, useRef } from 'react';
 
-const Videobox = ({ data, containerDimensions }) => {
+interface VideoboxProps {
+    data: {
+        id: number;
+        top_left_row: number;
+        top_left_col: number;
+        length: number;
+        width: number;
+    };
+    containerDimensions: {
+        width: number;
+        height: number;
+    };
+}
+
+const Videobox: React.FC<VideoboxProps> = ({ data, containerDimensions }) => {
     const inputRef = useRef<HTMLInputElement>(null);
     const [videoSrc, setVideoSrc] = useState<string | null>(null);
 
@@ -17,10 +31,10 @@ const Videobox = ({ data, containerDimensions }) => {
 
     const style: React.CSSProperties = {
         position: 'absolute',
-        left: `${(data.y / 12) * containerDimensions.width}px`,
-        top: `${(data.x / 16) * containerDimensions.height}px`,
-        width: `${(data.w / 12) * containerDimensions.width}px`,
-        height: `${(data.h / 16) * containerDimensions.height}px`,
+        left: `${(data.top_left_col / 12) * containerDimensions.width}px`,
+        top: `${(data.top_left_row / 16) * containerDimensions.height}px`,
+        width: `${(data.width / 12) * containerDimensions.width}px`,
+        height: `${(data.length / 16) * containerDimensions.height}px`,
         border: '3px solid grey',
         display: 'flex',
         justifyContent: 'center',
