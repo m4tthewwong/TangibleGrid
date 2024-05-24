@@ -7,5 +7,6 @@ export interface ArduinoData {
     length: number;
     width: number;
     status: string;
+    content: string;
   }
   

@@ -54,7 +54,7 @@ parser.on("data", async (line) => {
         }
     } finally {
         // Ensures that the client will close when you finish/error
-        await client.close();
+        //await client.close();
     }
 });
 
@@ -99,7 +99,7 @@ app.post("/api/modify/id/:id/content/:content", async (req, resp) => {
         return resp.json(doc);
     } finally {
         // Ensures that the client will close when you finish/error
-        await client.close();
+        //await client.close();
     }
 });
 

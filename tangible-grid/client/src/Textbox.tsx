@@ -7,6 +7,7 @@ interface TextboxProps {
         top_left_col: number;
         length: number;
         width: number;
+        content: string;
     };
     isActive: boolean;
     setActiveTextboxId: (id: number | null) => void;
@@ -15,11 +16,16 @@ interface TextboxProps {
         height: number;
     };
     updateContent: (id: string, content: string) => void;
+
 }
 
 const Textbox: React.FC<TextboxProps> = ({ data, isActive, setActiveTextboxId, containerDimensions, updateContent }) => {
     // Explicitly typing the ref as HTMLDivElement
     const textboxRef = useRef<HTMLDivElement>(null);
+
+    if (textboxRef && textboxRef.current) {
+        textboxRef.current!.innerText = data.content;
+    }
 
     const handleClick = () => {
         setActiveTextboxId(data.id);

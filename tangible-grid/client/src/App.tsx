@@ -47,8 +47,8 @@ const App = () => {
                 const response = await fetch('http://localhost:3001/api/watch', { method: 'POST' });
                 const data = await response.json();
                 console.log("Data:", data);
-                setArduinoChanges(data);
                 handleDatabaseChange(data);
+                setArduinoChanges(data);
             } catch (error) {
                 console.error('Failed to watch for database changes:', error);
             }
@@ -61,21 +61,32 @@ const App = () => {
         console.log("Handling database change:", change);
         setArduinoDataArray(prevData => {
             const existingItem = prevData.find(item => item.id === change.id);
-            if (!existingItem && change.status === 'Modified') {
+            if (change.status === 'Modified') {
                 const restore = window.confirm("Do you want to restore the previous content?");
-                if (restore) {
-                    // Attempting to restore with existing content
-                    return [...prevData, change];
+                if (restore) { // Attempting to restore with existing content
+                    const x = prevData.findIndex(item => item.id === change.id);
+                    change.content = prevData[x].content;
+                    prevData[x] = change;
+                    return prevData;
                 } else {
+                    updateContentInDatabase(change.id, " ");
+                    const x = prevData.findIndex(item => item.id === change.id);
+                    prevData[x] = change;
+                    return prevData;
                     // Attempting to add without content
-                    return [...prevData, { ...change, content: '' }];
+                    // return [...prevData, { ...change }];
                 }
-            } else if (change.type === 'Added') {
-                return [...prevData, { ...change, content: '' }];
-            } else if (change.type === 'Removed') {
-                return prevData.filter(item => item.id !== change.id);
+            } else if (!existingItem && change.status === 'Added') {
+                console.log("Added prevdata:", prevData);
+                return [...prevData, { ...change }];
+            } else {
+                const x = prevData.findIndex(item => item.id === change.id);
+                console.log("Index: ", x);
+                prevData[x].status = "Removed";
+                console.log("Prev data: ", prevData);
+                return prevData;
+                //return prevData.filter(item => item.id !== change.id);
             }
-            return [...prevData];
         });
     };
 
@@ -86,6 +97,12 @@ const App = () => {
                 method: 'POST',
             });
             const result = await response.json();
+            setArduinoDataArray(prevData => {
+                const x = prevData.findIndex(item => item.id === parseInt(id));
+                prevData[x].content = content;
+                return prevData;
+            });
+            console.log(content);
             console.log('Update response:', result);
         } catch (error) {
             console.error('Failed to update content:', error);
@@ -96,7 +113,7 @@ const App = () => {
         <div className="App">
             <Toolbar activeTextboxId={activeTextboxId} />
             <div id="container" ref={containerRef}> {/* Add the ref */}
-                {arduinoDataArray.filter(data => data.status === "Added").map((data) => { /* Only add brackets of type "add" */
+                {arduinoDataArray.filter(data => data.status === "Added" || data.status === "Modified").map((data) => { /* Only add brackets of type "add" */
                     switch (data.type) {
                         case 'Text':
                             return (
