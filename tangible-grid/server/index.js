@@ -15,6 +15,16 @@ const client = new MongoClient(
     }
 );
 
+// Remove after testing
+try {
+    await client.connect();
+    const database = client.db("TangibleGrid");
+    const collection = database.collection("Brackets");
+    collection.deleteMany({})
+} finally {
+}
+//
+
 const app = express();
 app.use(cors());
 const port = 3001;
@@ -47,7 +57,7 @@ parser.on("data", async (line) => {
                         top_left_col: parseInt(data["top_left_col"]),
                         length: parseInt(data["length"]),
                         width: parseInt(data["width"]),
-                        status: data["status"]
+                        status: data["status"],
                     },
                 }
             );
