@@ -17,10 +17,11 @@ const client = new MongoClient(
 
 // Remove after testing
 try {
-    await client.connect();
-    const database = client.db("TangibleGrid");
-    const collection = database.collection("Brackets");
-    collection.deleteMany({})
+    client.connect().then((value) => {
+        const database = client.db("TangibleGrid");
+        const collection = database.collection("Brackets");
+        collection.deleteMany({});
+    });
 } finally {
 }
 //
