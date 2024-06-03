@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 
 interface TextboxProps {
     data: {
@@ -23,9 +23,11 @@ const Textbox: React.FC<TextboxProps> = ({ data, isActive, setActiveTextboxId, c
     // Explicitly typing the ref as HTMLDivElement
     const textboxRef = useRef<HTMLDivElement>(null);
 
-    if (textboxRef && textboxRef.current) {
-        textboxRef.current!.innerText = data.content;
-    }
+    useEffect(() => {
+        if (textboxRef.current) {
+            textboxRef.current.innerText = data.content;
+        }
+    }, [data.content]); // Update the content when data.content changes
 
     const handleClick = () => {
         setActiveTextboxId(data.id);
