@@ -5,12 +5,12 @@ const { ReadlineParser } = require("@serialport/parser-readline");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 
 // MongoDB Credentials
-const credentials = "../../MongoDB.pem";
+//const credentials = "../../MongoDB.pem";
 
 const client = new MongoClient(
-    "mongodb+srv://bracketscluster.tnpze91.mongodb.net/?authSource=%24external&authMechanism=MONGODB-X509&retryWrites=true&w=majority&appName=BracketsCluster",
+    "mongodb+srv://mwong119:rB7BybC6WnmA32fD@cluster0.gkqvc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
     {
-        tlsCertificateKeyFile: credentials,
+        //tlsCertificateKeyFile: credentials,
         serverApi: ServerApiVersion.v1,
     }
 );
