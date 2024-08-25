@@ -55,7 +55,7 @@ const App = () => {
                     if (previousItem) {
                         change.content = previousItem.content;
                     }
-                    const updatedData = prevData.map(item => item.id === change.id ? { ...item, content: change.content, status: 'Modified' } : item);
+                    const updatedData = prevData.map(item => item.id === change.id ? { ...change, content: change.content, status: 'Modified' } : item);
                     console.log("Updated data after restoring:", updatedData);
                     return [...updatedData];
                 } else {

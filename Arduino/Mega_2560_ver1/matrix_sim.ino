@@ -61,7 +61,11 @@ void loop() {
   detect();
   delay(10000);
 }
-
+/*
+void loop() {
+  detect();
+}
+*/
 
 void detect() {
   // Checking if the new matrix has any qualified changes compared to the current matrix
