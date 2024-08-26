@@ -12,7 +12,7 @@ int ranges[NUM_BRACKETS + 1] = { 100, 200, 300, 400, 500, 600, 700, 800, 900, 10
 String bracket_types[3] = { "Text", "Image", "Video" };
 String current_json;
 
-// Data type defining elemements important to a bracket
+// Data type defining elements important to a bracket
 struct bracket {
   int id;
   int resistance;
@@ -36,6 +36,7 @@ void setup() {
   Serial.begin(9600);
 }
 
+// Uncomment when testing with fake bracket inputs
 void loop() {
   // Adding first bracket
   set_bracket_1();
@@ -61,6 +62,8 @@ void loop() {
   detect();
   delay(10000);
 }
+
+// Uncomment when testing with the baseboard
 /*
 void loop() {
   detect();

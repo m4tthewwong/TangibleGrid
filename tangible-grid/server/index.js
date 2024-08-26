@@ -7,18 +7,29 @@ const { MongoClient, ServerApiVersion } = require("mongodb");
 // MongoDB Credentials
 //const credentials = "../../MongoDB.pem";
 
-const client = new MongoClient(
-    "mongodb+srv://mwong119:rB7BybC6WnmA32fD@cluster0.gkqvc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+/*const client = new MongoClient(
+    //"mongodb+srv://mwong119:rB7BybC6WnmA32fD@cluster0.gkqvc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+    "mongodb+srv://jsli:tangibleSite_password@tangiblesite-cluster-0.xlksc.mongodb.net/?retryWrites=true&w=majority&appName=TangibleSite-Cluster-0",
     {
         //tlsCertificateKeyFile: credentials,
         serverApi: ServerApiVersion.v1,
     }
-);
+);*/
+
+const uri = "mongodb+srv://jsli:tangibleSite_password@tangiblesite-cluster-0.xlksc.mongodb.net/?retryWrites=true&w=majority&appName=TangibleSite-Cluster-0";
+
+const client = new MongoClient(uri, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    }
+});
 
 // Remove after testing
 try {
     client.connect().then((value) => {
-        const database = client.db("TangibleGrid");
+        const database = client.db("tangibleSite");
         const collection = database.collection("Brackets");
         collection.deleteMany({});
     });
@@ -39,7 +50,7 @@ parser.on("data", async (line) => {
     console.log("Received:", line);
     try {
         await client.connect();
-        const database = client.db("TangibleGrid");
+        const database = client.db("tangibleSite");
         const collection = database.collection("Brackets");
         const data = JSON.parse(line)[0];
         // const data = JSON.parse(line);
@@ -78,7 +89,7 @@ app.post("/api/init", async (req, resp) => {
     try {
         var output = [];
         await client.connect();
-        const database = client.db("TangibleGrid");
+        const database = client.db("tangibleSite");
         const collection = database.collection("Brackets");
         var docCount = await collection.find({});
         for await (const doc of docCount) {
@@ -97,7 +108,7 @@ app.post("/api/init", async (req, resp) => {
 app.post("/api/modify/id/:id/content/:content", async (req, resp) => {
     try {
         await client.connect();
-        const database = client.db("TangibleGrid");
+        const database = client.db("tangibleSite");
         const collection = database.collection("Brackets");
         var doc = await collection.updateOne(
             { id: parseInt(req.params["id"]) },
@@ -118,7 +129,7 @@ app.post("/api/modify/id/:id/content/:content", async (req, resp) => {
 app.post("/api/watch", async (req, resp) => {
     try {
         await client.connect();
-        const database = client.db("TangibleGrid");
+        const database = client.db("tangibleSite");
         const collection = database.collection("Brackets");
         const changeStream = collection.watch([], {
             fullDocument: "updateLookup",
