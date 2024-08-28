@@ -14,37 +14,49 @@ const App = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const isUserInitiatedRef = useRef(false); // Used to fix a bug where I get a random window confirmation after saving the text in a textbox
 
-    // Define the startSpeechRecognition function inside the App component
     const startSpeechRecognition = useCallback(() => {
         const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.lang = 'en-US';
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
-
+    
+        let isTitleCommand = false;
+        let isTextCommand = false;
+    
         recognition.start();
-
+    
         recognition.onresult = (event) => {
             const speechToText = event.results[0][0].transcript;
-
-            if (speechToText.includes('TangibleSite title')) {
+    
+            if (speechToText.includes('tangible site title')) {
+                isTitleCommand = true;  // Set a flag for the title command
+            } else if (speechToText.includes('tangible site stop')) {
+                recognition.stop();  // Stop recognition on command
+                return;
+            } else {
+                isTextCommand = true;  // Set a flag for the text command
+            }
+            if (isTitleCommand) {
+                // Apply title formatting and insert the spoken text as the title
                 document.execCommand('bold');
                 document.execCommand('fontSize', false, '5');
                 document.execCommand('justifyCenter');
-                document.execCommand('insertText', false, '\n');
-            } else if (speechToText.includes('TangibleSite text')) {
-                document.execCommand('insertText', false, '\n');
-            } else if (speechToText.includes('TangibleSite stop')) {
-                recognition.stop();
+                document.execCommand('insertText', false, speechToText + '\n');
+                isTitleCommand = false;  // Reset the flag
+            } else if (isTextCommand) {
+                // Insert the spoken text as normal text
+                document.execCommand('insertText', false, speechToText + '\n');
+                isTextCommand = false;  // Reset the flag
             } else {
                 // Default behavior: insert the recognized speech into the textbox
                 document.execCommand('insertText', false, speechToText + '\n');
             }
         };
-
+    
         recognition.onerror = (event) => {
             console.error('Speech recognition error:', event.error);
         };
-    }, []);
+    }, []);    
 
     // Fetch initial data from server on component mount
     useEffect(() => {
@@ -80,7 +92,6 @@ const App = () => {
         console.log("Handling database change:", change);
         setArduinoDataArray(prevData => {
             const existingItem = prevData.find(item => item.id === change.id);
-            
             // Activate speech recognition if touch is true and type is Text
             if (change.touch && change.type === 'Text') {
                 setActiveTextboxId(change.id);

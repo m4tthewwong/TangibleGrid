@@ -23,6 +23,13 @@ const Textbox: React.FC<TextboxProps> = ({ data, isActive, setActiveTextboxId, c
     // Explicitly typing the ref as HTMLDivElement
     const textboxRef = useRef<HTMLDivElement>(null);
 
+    // Focus the textbox when it becomes active
+    useEffect(() => {
+        if (isActive && textboxRef.current) {
+            textboxRef.current.focus(); // Focus the textbox
+        }
+    }, [isActive]); // This effect runs when isActive changes
+
     useEffect(() => {
         if (textboxRef.current) {
             textboxRef.current.innerText = data.content;

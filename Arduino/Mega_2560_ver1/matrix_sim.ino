@@ -22,6 +22,7 @@ struct bracket {
   int length;
   int width;
   String status;
+  bool touch;
 };
 
 bracket curr_bracket;
@@ -267,6 +268,8 @@ void find_rect() {
       }
     }
 
+    curr_bracket.touch = (curr_bracket.type == "Text");  // Set touch to true for text brackets (test simulation)
+
     if (sign > 0 && bracket_map[curr_bracket.id].id == -1) {
       curr_bracket.status = "Added";
     } else if (sign < 0) {
@@ -309,6 +312,7 @@ String update_json() {
   block["length"] = curr_bracket.length;
   block["width"] = curr_bracket.width;
   block["status"] = curr_bracket.status;
+  block["touch"] = curr_bracket.touch;
   block["content"] = "";
 
   String output;
