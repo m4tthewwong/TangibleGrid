@@ -43,19 +43,25 @@ void loop() {
   set_bracket_1();
   delay(1000);
   detect();
+  //delay(10000);
+
+  // Adding fifth bracket
+  set_bracket_5();
+  delay(1000);
+  detect();
   delay(10000);
 
   // Adding second bracket
-  // set_bracket_2();
-  // delay(1000);
-  // detect();
-  // delay(10000);
+  //set_bracket_5();
+  //delay(1000);
+  //detect();
+  //delay(10000);
 
   // // Removing first bracket
   set_bracket_3();
   delay(1000);
   detect();
-  delay(10000);
+  delay(100000);
 
   // Adding third bracket
   // set_bracket_4();
@@ -229,6 +235,14 @@ void add_back_1(){
   matrix_array_updated[9][6] = 180;
   matrix_array_updated[6][6] = 180;
   matrix_array_updated[6][9] = 180;
+}
+
+// Add Text Bracket 2
+void set_bracket_5() {
+  matrix_array_updated[6][5] = 180;
+  matrix_array_updated[12][1] = 180;
+  matrix_array_updated[12][5] = 180;
+  matrix_array_updated[6][1] = 180;
 }
 
 // Findes the changed bracket and updates the current bracket variable
