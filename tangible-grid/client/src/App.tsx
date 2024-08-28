@@ -19,43 +19,68 @@ const App = () => {
         recognition.lang = 'en-US';
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
-    
-        let isTitleCommand = false;
-        let isTextCommand = false;
+
+        // Function to continuously restart speech recognition
+        const restartRecognition = () => {
+            recognition.start();
+        };
     
         recognition.start();
     
         recognition.onresult = (event) => {
-            const speechToText = event.results[0][0].transcript;
-    
-            if (speechToText.includes('tangible site title')) {
-                isTitleCommand = true;  // Set a flag for the title command
-            } else if (speechToText.includes('tangible site stop')) {
+            let speechToText = event.results[0][0].transcript.toLowerCase();
+
+            console.log("Recognized Speech:", speechToText); // Debugging log
+
+            if (speechToText.includes('stop')) {
                 recognition.stop();  // Stop recognition on command
+                console.log("Stopping recognition: ", speechToText);  // Debugging log
                 return;
-            } else {
-                isTextCommand = true;  // Set a flag for the text command
+            } 
+
+            if (speechToText.startsWith('title')) {
+                // Remove the command part and keep the rest as the title
+                speechToText = speechToText.replace('title', '').trim();
+                if (speechToText) {
+                    // Apply title formatting and insert the spoken text as the title
+                    document.execCommand('bold');
+                    document.execCommand('fontSize', false, '5');
+                    document.execCommand('justifyCenter');
+                    document.execCommand('insertText', false, speechToText + '\n');
+                    document.execCommand('removeFormat');  // Reset formatting after the title
+                }
             }
-            if (isTitleCommand) {
-                // Apply title formatting and insert the spoken text as the title
-                document.execCommand('bold');
-                document.execCommand('fontSize', false, '5');
-                document.execCommand('justifyCenter');
-                document.execCommand('insertText', false, speechToText + '\n');
-                isTitleCommand = false;  // Reset the flag
-            } else if (isTextCommand) {
-                // Insert the spoken text as normal text
-                document.execCommand('insertText', false, speechToText + '\n');
-                isTextCommand = false;  // Reset the flag
-            } else {
-                // Default behavior: insert the recognized speech into the textbox
-                document.execCommand('insertText', false, speechToText + '\n');
+            else {
+            // Check for text command
+            //if (speechToText.startsWith('text')) {
+                // Remove the command part and keep the rest as normal text
+                //speechToText = speechToText.replace('text', '').trim();
+                if (speechToText) {
+                    // Remove any existing formatting and insert normal text
+                    document.execCommand('removeFormat');
+                    document.execCommand('justifyLeft');
+                    document.execCommand('insertText', false, speechToText + '\n');
+                }
             }
+
+            //restartRecognition(); // Restart recognition after processing the result, unless stopped
+        };
+
+        recognition.onend = () => {
+            // Restart recognition when it ends (unless explicitly stopped by the "stop" command)
+            restartRecognition();
         };
     
         recognition.onerror = (event) => {
             console.error('Speech recognition error:', event.error);
         };
+        //recognition.onerror = (event) => {
+            //console.error('Speech recognition error:', event.error);
+            //if (event.error !== 'no-speech' && event.error !== 'aborted') {
+                //// If there is an error other than 'no-speech' or 'aborted', restart recognition
+                //restartRecognition();
+            //}
+        //};
     }, []);    
 
     // Fetch initial data from server on component mount
