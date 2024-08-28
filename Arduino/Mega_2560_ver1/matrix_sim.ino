@@ -45,22 +45,27 @@ void loop() {
   delay(10000);
 
   // Adding second bracket
-  set_bracket_2();
-  delay(1000);
-  detect();
-  delay(10000);
+  // set_bracket_2();
+  // delay(1000);
+  // detect();
+  // delay(10000);
 
-  // Removing first bracket
+  // // Removing first bracket
   set_bracket_3();
   delay(1000);
   detect();
   delay(10000);
 
   // Adding third bracket
-  set_bracket_4();
+  // set_bracket_4();
+  // delay(1000);
+  // detect();
+  // delay(10000);
+
+  add_back_1();
   delay(1000);
   detect();
-  delay(10000);
+  delay(100000);
 }
 
 // Uncomment when testing with the baseboard
@@ -216,6 +221,13 @@ void set_bracket_4() {
   matrix_array_updated[11][6] = 850;
   matrix_array_updated[14][2] = 850;
   matrix_array_updated[14][6] = 850;
+}
+
+void add_back_1(){
+  matrix_array_updated[9][9] = 180;
+  matrix_array_updated[9][6] = 180;
+  matrix_array_updated[6][6] = 180;
+  matrix_array_updated[6][9] = 180;
 }
 
 // Findes the changed bracket and updates the current bracket variable

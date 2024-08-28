@@ -8,5 +8,6 @@ export interface ArduinoData {
     width: number;
     status: string;
     content: string;
+    touch: boolean;
   }
   

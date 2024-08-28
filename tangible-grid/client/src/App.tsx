@@ -14,6 +14,38 @@ const App = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const isUserInitiatedRef = useRef(false); // Used to fix a bug where I get a random window confirmation after saving the text in a textbox
 
+    // Define the startSpeechRecognition function inside the App component
+    const startSpeechRecognition = useCallback(() => {
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.start();
+
+        recognition.onresult = (event) => {
+            const speechToText = event.results[0][0].transcript;
+
+            if (speechToText.includes('TangibleSite title')) {
+                document.execCommand('bold');
+                document.execCommand('fontSize', false, '5');
+                document.execCommand('justifyCenter');
+                document.execCommand('insertText', false, '\n');
+            } else if (speechToText.includes('TangibleSite text')) {
+                document.execCommand('insertText', false, '\n');
+            } else if (speechToText.includes('TangibleSite stop')) {
+                recognition.stop();
+            } else {
+                // Default behavior: insert the recognized speech into the textbox
+                document.execCommand('insertText', false, speechToText + '\n');
+            }
+        };
+
+        recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+        };
+    }, []);
+
     // Fetch initial data from server on component mount
     useEffect(() => {
         const initFetch = async () => {
@@ -48,6 +80,13 @@ const App = () => {
         console.log("Handling database change:", change);
         setArduinoDataArray(prevData => {
             const existingItem = prevData.find(item => item.id === change.id);
+            
+            // Activate speech recognition if touch is true and type is Text
+            if (change.touch && change.type === 'Text') {
+                setActiveTextboxId(change.id);
+                startSpeechRecognition();  // Trigger speech recognition for textboxes
+            }
+            
             if (change.status === 'Modified') {
                 const restore = window.confirm("Do you want to restore the previous content?");
                 if (restore) {
@@ -77,7 +116,7 @@ const App = () => {
             }
             return prevData;
         });
-    }, []);
+    }, [startSpeechRecognition]);
 
     // Watch for database changes
     useEffect(() => {
