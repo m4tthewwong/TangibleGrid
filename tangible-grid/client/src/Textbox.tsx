@@ -50,9 +50,9 @@ const Textbox: React.FC<TextboxProps> = ({ data, isActive, setActiveTextboxId, c
 
     const style: React.CSSProperties = {
         position: 'absolute',
-        left: `${((data.top_left_col - 1) / 11) * containerDimensions.width}px`,
-        top: `${((data.top_left_row - 1) / 15) * containerDimensions.height}px`,
-        width: `${((data.width) / 12) * containerDimensions.width}px`,
+        left: `${((data.top_left_col) / 12) * containerDimensions.width}px`,
+        top: `${((data.top_left_row) / 16) * containerDimensions.height}px`,
+        width: `${(((data.width) / 12) * containerDimensions.width)}px`,
         height: `${((data.length) / 16) * containerDimensions.height}px`,
         border: '3px double grey',
         padding: '10px',

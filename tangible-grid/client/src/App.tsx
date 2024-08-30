@@ -15,29 +15,45 @@ const App = () => {
     const isUserInitiatedRef = useRef(false); // Used to fix a bug where I get a random window confirmation after saving the text in a textbox
 
     const startSpeechRecognition = useCallback(() => {
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.lang = 'en-US';
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
-
+        
+        let stopRecognition = false;  // Flag to control whether recognition should restart
+        let isRecognitionActive = false;  // Flag to track if recognition is active
+    
         // Function to continuously restart speech recognition
         const restartRecognition = () => {
-            recognition.start();
+            if (!stopRecognition && !isRecognitionActive) {  // Only restart if the stop command hasn't been issued and recognition is not already running
+                recognition.start();
+                isRecognitionActive = true;
+            }
         };
     
-        recognition.start();
+        recognition.onstart = () => {
+            isRecognitionActive = true;  // Mark recognition as active when it starts
+        };
+    
+        recognition.onend = () => {
+            isRecognitionActive = false;  // Mark recognition as inactive when it ends
+            if (!stopRecognition) {
+                restartRecognition();  // Restart recognition if it hasn't been stopped
+            }
+        };
     
         recognition.onresult = (event) => {
             let speechToText = event.results[0][0].transcript.toLowerCase();
-
+    
             console.log("Recognized Speech:", speechToText); // Debugging log
-
+    
             if (speechToText.includes('stop')) {
+                stopRecognition = true;  // Set the flag to prevent restarting
                 recognition.stop();  // Stop recognition on command
                 console.log("Stopping recognition: ", speechToText);  // Debugging log
                 return;
-            } 
-
+            }
+    
             if (speechToText.startsWith('title')) {
                 // Remove the command part and keep the rest as the title
                 speechToText = speechToText.replace('title', '').trim();
@@ -49,12 +65,7 @@ const App = () => {
                     document.execCommand('insertText', false, speechToText + '\n');
                     document.execCommand('removeFormat');  // Reset formatting after the title
                 }
-            }
-            else {
-            // Check for text command
-            //if (speechToText.startsWith('text')) {
-                // Remove the command part and keep the rest as normal text
-                //speechToText = speechToText.replace('text', '').trim();
+            } else {
                 if (speechToText) {
                     // Remove any existing formatting and insert normal text
                     document.execCommand('removeFormat');
@@ -62,26 +73,19 @@ const App = () => {
                     document.execCommand('insertText', false, speechToText + '\n');
                 }
             }
-
-            //restartRecognition(); // Restart recognition after processing the result, unless stopped
-        };
-
-        recognition.onend = () => {
-            // Restart recognition when it ends (unless explicitly stopped by the "stop" command)
-            restartRecognition();
         };
     
         recognition.onerror = (event) => {
             console.error('Speech recognition error:', event.error);
+            isRecognitionActive = false;  // Reset the active flag on error to allow restarting
+            if (!stopRecognition) {
+                restartRecognition();  // Restart on error unless stopped
+            }
         };
-        //recognition.onerror = (event) => {
-            //console.error('Speech recognition error:', event.error);
-            //if (event.error !== 'no-speech' && event.error !== 'aborted') {
-                //// If there is an error other than 'no-speech' or 'aborted', restart recognition
-                //restartRecognition();
-            //}
-        //};
-    }, []);    
+    
+        // Start the initial recognition
+        restartRecognition();
+    }, []);          
 
     // Fetch initial data from server on component mount
     useEffect(() => {
@@ -173,24 +177,40 @@ const App = () => {
         fetchChanges();
     }, [arduinoChanges, handleDatabaseChange]);
 
-    const updateContentInDatabase = async (id, content) => {
+    const updateContentInDatabase = async (id, content, retries = 5) => {
         isUserInitiatedRef.current = true; // Set the flag before updating
-        try {
-            const response = await fetch(`http://localhost:3001/api/modify/id/${id}/content/${encodeURIComponent(content)}`, {
-                method: 'POST',
-            });
-            const result = await response.json();
-            setArduinoDataArray(prevData => {
-                const updatedData = prevData.map(item => item.id === parseInt(id) ? { ...item, content } : item);
-                console.log("Updated data after content modification:", updatedData);
-                return [...updatedData];
-            });
-            console.log(content);
-            console.log('Update response:', result);
-        } catch (error) {
-            console.error('Failed to update content:', error);
+        let attempts = 0;
+    
+        while (attempts < retries) {
+            try {
+                const response = await fetch(`http://localhost:3001/api/modify/id/${id}/content/${encodeURIComponent(content)}`, {
+                    method: 'POST',
+                });
+    
+                if (!response.ok) {
+                    throw new Error(`Server responded with status ${response.status}`);
+                }
+    
+                const result = await response.json();
+                setArduinoDataArray(prevData => {
+                    const updatedData = prevData.map(item => item.id === parseInt(id) ? { ...item, content } : item);
+                    console.log("Updated data after content modification:", updatedData);
+                    return [...updatedData];
+                });
+                console.log(content);
+                console.log('Update response:', result);
+                return; // Exit if successful
+            } catch (error) {
+                attempts += 1;
+                console.error(`Failed to update content, attempt ${attempts}:`, error);
+                if (attempts >= retries) {
+                    console.error('Max retries reached. Giving up.');
+                } else {
+                    console.log('Retrying...');
+                }
+            }
         }
-    };
+    };    
 
     return (
         <div className="App">
