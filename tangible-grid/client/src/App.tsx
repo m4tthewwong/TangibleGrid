@@ -6,6 +6,18 @@ import Videobox from './Videobox.tsx';
 import Toolbar from './Toolbar.tsx';
 import { ArduinoData } from './types'; // Type definitions
 
+// ALL BRACKETS
+// If bracket added, say status, type, location, and size
+// If bracket removed, say status, type
+// If bracket modified, say status, type, location, size, and content (can be empty for text) (guaranteed empty for image/video)
+
+// TEXT BRACKETS
+// When adding text bracket, let users know the maximum number of characters they can add into the textbox (for now, one grid - 25 letters)
+// When modified text bracket, let users know the current number of characters already inputted in the textbox out of the maximum
+
+// Test what happens when I add the textbox (one instance of speech recognition) and user clicks record (another instance)
+// See what happens if you add a textbox and remove the textbox, does it still record?
+
 const App = () => {
     const [arduinoDataArray, setArduinoDataArray] = useState<ArduinoData[]>([]);
     const [arduinoChanges, setArduinoChanges] = useState<ArduinoData>();
@@ -59,8 +71,8 @@ const App = () => {
                 speechToText = speechToText.replace('title', '').trim();
                 if (speechToText) {
                     // Apply title formatting and insert the spoken text as the title
-                    document.execCommand('bold');
-                    document.execCommand('fontSize', false, '5');
+                    document.execCommand('bold'); // Not working
+                    document.execCommand('fontSize', false, '5'); // Not working
                     document.execCommand('justifyCenter');
                     document.execCommand('insertText', false, speechToText + '\n');
                     document.execCommand('removeFormat');  // Reset formatting after the title
