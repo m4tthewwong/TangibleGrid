@@ -19,7 +19,7 @@ import { ArduinoData } from './types'; // Type definitions
 
 // KNOWN ISSUES
 // You must say "stop" before confirming the textbox, otherwise error occurs with multiple instances of speech recognition
-// Error 404 with new arduino code
+// Error 404 with new arduino code - (COULD POSSIBLY HAPPEN WHEN CONFIRMING EMPTY TEXT BOX)
 // "title" text doesn't get bolded or increased in font size
 // while speech recognition is running, the speech synthesis doesn't get run
 
@@ -40,6 +40,26 @@ const App = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const isUserInitiatedRef = useRef(false); // Used to fix a bug where I get a random window confirmation after saving the text in a textbox
     const recognitionRef = useRef<typeof SpeechRecognition | null>(null); // Ref to keep track of recognition instance
+    const [isTextboxFocused, setIsTextboxFocused] = useState(false); // Track textbox focus state
+
+    // Function to calculate the percentage of empty space
+    const calculateEmptySpacePercentage = useCallback(() => {
+        if (!containerRef.current) return 100;
+        
+        const containerArea = containerDimensions.width * containerDimensions.height;
+        let filledArea = 0;
+
+        arduinoDataArray.forEach(data => {
+            if (data.status === "Added" || data.status === "Modified") {
+                const boxWidth = containerDimensions.width * (data.width / 12);
+                const boxHeight = containerDimensions.height * (data.length / 16);
+                filledArea += boxWidth * boxHeight;
+            }
+        });
+
+        const emptySpacePercentage = ((containerArea - filledArea) / containerArea) * 100;
+        return emptySpacePercentage;
+    }, [arduinoDataArray, containerDimensions]);
 
     // Function to handle speaking based on bracket status
     const handleBracketSpeech = useCallback((bracket) => {
@@ -104,9 +124,6 @@ const App = () => {
                     console.log("Updated data after content modification:", updatedData);
                     return [...updatedData];
                 });
-
-                //const modifiedBracket = result;
-                //handleBracketSpeech(modifiedBracket);
                 
                 console.log(content);
                 console.log('Update response:', result);
@@ -294,6 +311,24 @@ const App = () => {
         fetchChanges();
     }, [arduinoChanges, handleDatabaseChange]);    
 
+    // Listen for "-" key press to announce the empty space percentage
+    useEffect(() => {
+        const handleKeyPress = (event: KeyboardEvent) => {
+            if (event.key === '-' && !isTextboxFocused) {
+                const emptySpacePercentage = calculateEmptySpacePercentage();
+                const speechText = `The webpage is ${emptySpacePercentage.toFixed(2)} percent empty.`;
+                console.log("User pressed '-' button: ", speechText);
+                speakText(speechText);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyPress);
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyPress);
+        };
+    }, [calculateEmptySpacePercentage, isTextboxFocused]);
+
     return (
         <div className="App">
             <Toolbar activeTextboxId={activeTextboxId} />
@@ -307,6 +342,8 @@ const App = () => {
                                     data={data}
                                     isActive={data.id === activeTextboxId}
                                     setActiveTextboxId={setActiveTextboxId}
+                                    onFocus={() => setIsTextboxFocused(true)} // Set focus state
+                                    onBlur={() => setIsTextboxFocused(false)}  // Unset focus state
                                     containerDimensions={containerDimensions}
                                     updateContent={updateContentInDatabase}
                                 />

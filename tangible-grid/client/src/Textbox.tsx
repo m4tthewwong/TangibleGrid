@@ -11,6 +11,8 @@ interface TextboxProps {
     };
     isActive: boolean;
     setActiveTextboxId: (id: number | null) => void;
+    onFocus: () => void;
+    onBlur: () => void;
     containerDimensions: {
         width: number;
         height: number;
@@ -19,7 +21,7 @@ interface TextboxProps {
 
 }
 
-const Textbox: React.FC<TextboxProps> = ({ data, isActive, setActiveTextboxId, containerDimensions, updateContent }) => {
+const Textbox: React.FC<TextboxProps> = ({ data, isActive, setActiveTextboxId, containerDimensions, updateContent, onFocus, onBlur }) => {
     // Explicitly typing the ref as HTMLDivElement
     const textboxRef = useRef<HTMLDivElement>(null);
 
@@ -38,6 +40,7 @@ const Textbox: React.FC<TextboxProps> = ({ data, isActive, setActiveTextboxId, c
 
     const handleClick = () => {
         setActiveTextboxId(data.id);
+        onFocus();
     };
 
     // intended to trigger an action when the Textbox loses focus
@@ -46,6 +49,7 @@ const Textbox: React.FC<TextboxProps> = ({ data, isActive, setActiveTextboxId, c
         if (textboxRef.current) {
             updateContent(data.id.toString(), textboxRef.current.innerHTML);
         }
+        onBlur();
     };
 
     const style: React.CSSProperties = {
