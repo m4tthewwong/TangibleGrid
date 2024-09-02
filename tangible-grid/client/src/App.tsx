@@ -15,6 +15,8 @@ import { ArduinoData } from './types'; // Type definitions
 // When adding text bracket, let users know the maximum number of characters they can add into the textbox (for now, one grid - 25 letters)
 // When modified text bracket, let users know the current number of characters already inputted in the textbox out of the maximum
 
+// ^Using Web Speech API's SpeechSynthesis feature
+
 // Test what happens when I add the textbox (one instance of speech recognition) and user clicks record (another instance)
 // See what happens if you add a textbox and remove the textbox, does it still record?
 
@@ -123,6 +125,50 @@ const App = () => {
             setContainerDimensions({ width, height });
         }
     }, []);
+
+    const speakText = (text) => {
+        const speech = new SpeechSynthesisUtterance(text);
+        speech.lang = 'en-US';
+        speech.pitch = 1;
+        speech.rate = 1;
+        window.speechSynthesis.speak(speech);
+    };
+
+    // Function to handle speaking based on bracket status
+    const handleBracketSpeech = (bracket) => {
+        let speechText = '';
+
+        // General bracket information
+        const location = `at row ${bracket.top_left_row} and column ${bracket.top_left_col}`;
+        const size = `with a width of ${bracket.width} and height of ${bracket.length}`;
+
+        switch (bracket.status) {
+            case 'Added':
+                speechText = `A ${bracket.type.toLowerCase()} bracket was added ${location} ${size}.`;
+                if (bracket.type === 'Text') {
+                    speechText += ` You can add up to 25 characters.`;
+                }
+                break;
+            
+            case 'Removed':
+                speechText = `A ${bracket.type.toLowerCase()} bracket was removed.`;
+                break;
+            
+            case 'Modified':
+                speechText = `A ${bracket.type.toLowerCase()} bracket was modified ${location} ${size}.`;
+                if (bracket.type === 'Text') {
+                    const characterCount = bracket.content.length;
+                    speechText += ` The textbox currently contains ${characterCount} characters out of a maximum of 25.`;
+                }
+                break;
+            
+            default:
+                return;  // No action if status is not recognized
+        }
+
+        // Speak the constructed speech text
+        speakText(speechText);
+    };
 
     const handleDatabaseChange = useCallback((change) => {
         if (isUserInitiatedRef.current) {
