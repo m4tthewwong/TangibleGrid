@@ -16,11 +16,18 @@ import { ArduinoData } from './types'; // Type definitions
 // When modified text bracket, let users know the current number of characters already inputted in the textbox out of the maximum
 
 // ^Using Web Speech API's SpeechSynthesis feature
-// You must say "stop" before confirming the textbox, otherwise error occurs with multiple instances of speech recognition
 
+// KNOWN ISSUES
+// You must say "stop" before confirming the textbox, otherwise error occurs with multiple instances of speech recognition
+// Error 404 with new arduino code
+// "title" text doesn't get bolded or increased in font size
+// while speech recognition is running, the speech synthesis doesn't get run
+
+// THINGS THAT NEED TO BE TESTED
 // Test what happens when I add the textbox (one instance of speech recognition) and user clicks record (another instance)
 // See what happens if you add a textbox and remove the textbox, does it still record?
 
+// NEW FEATURES NEED TO BE ADDED
 // Keyboard number pushed is the id of the bracket that gets the information repeated
 // Have image fitted into image box with remaining white space and let the user know where the white space is through the speech synthesis
 // push "-" key to verbalize the % of empty space of the webpage
@@ -32,9 +39,7 @@ const App = () => {
     const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
     const containerRef = useRef<HTMLDivElement>(null);
     const isUserInitiatedRef = useRef(false); // Used to fix a bug where I get a random window confirmation after saving the text in a textbox
-
-    // Ref to keep track of recognition instance
-    const recognitionRef = useRef<typeof SpeechRecognition | null>(null);
+    const recognitionRef = useRef<typeof SpeechRecognition | null>(null); // Ref to keep track of recognition instance
 
     // Function to handle speaking based on bracket status
     const handleBracketSpeech = useCallback((bracket) => {
