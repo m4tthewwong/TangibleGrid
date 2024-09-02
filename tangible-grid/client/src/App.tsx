@@ -255,6 +255,10 @@ const App = () => {
                     console.log("Updated data after content modification:", updatedData);
                     return [...updatedData];
                 });
+
+                const modifiedBracket = result;
+                handleBracketSpeech(modifiedBracket);
+                
                 console.log(content);
                 console.log('Update response:', result);
                 return; // Exit if successful
