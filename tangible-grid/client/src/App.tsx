@@ -16,9 +16,14 @@ import { ArduinoData } from './types'; // Type definitions
 // When modified text bracket, let users know the current number of characters already inputted in the textbox out of the maximum
 
 // ^Using Web Speech API's SpeechSynthesis feature
+// You must say "stop" before confirming the textbox, otherwise error occurs with multiple instances of speech recognition
 
 // Test what happens when I add the textbox (one instance of speech recognition) and user clicks record (another instance)
 // See what happens if you add a textbox and remove the textbox, does it still record?
+
+// Keyboard number pushed is the id of the bracket that gets the information repeated
+// Have image fitted into image box with remaining white space and let the user know where the white space is through the speech synthesis
+// push "-" key to verbalize the % of empty space of the webpage
 
 const App = () => {
     const [arduinoDataArray, setArduinoDataArray] = useState<ArduinoData[]>([]);
@@ -43,7 +48,7 @@ const App = () => {
             case 'Added':
                 speechText = `A ${bracket.type.toLowerCase()} bracket was added ${location} ${size}.`;
                 if (bracket.type === 'Text') {
-                    speechText += ` You can add up to 25 characters.`;
+                    speechText += ` You can add up to ${bracket.width * bracket.length * 25} characters.`;
                 }
                 break;
             
@@ -54,8 +59,14 @@ const App = () => {
             case 'Modified':
                 speechText = `A ${bracket.type.toLowerCase()} bracket was modified ${location} ${size}.`;
                 if (bracket.type === 'Text') {
-                    const characterCount = bracket.content.length;
-                    speechText += ` The textbox currently contains ${characterCount} characters out of a maximum of 25.`;
+                    let cleanContent = bracket.content.replace(/<\/?[^>]+(>|$)/g, ""); // Cleaned out the html elements out of the content
+                    const characterCount = cleanContent.length;
+                    if (characterCount > 0) {
+                        speechText += ` The content in the textbox currently is   ${cleanContent}.`;
+                    } else {
+                        speechText += ` There is no content in the textbox.`;
+                    }
+                    speechText += ` The textbox currently contains ${characterCount} characters out of a maximum of ${bracket.width * bracket.length * 25}.`;
                 }
                 break;
             
@@ -64,6 +75,7 @@ const App = () => {
         }
 
         // Speak the constructed speech text
+        console.log("Speech Text: ", speechText);
         speakText(speechText);
     }, []);
 
@@ -88,8 +100,8 @@ const App = () => {
                     return [...updatedData];
                 });
 
-                const modifiedBracket = result;
-                handleBracketSpeech(modifiedBracket);
+                //const modifiedBracket = result;
+                //handleBracketSpeech(modifiedBracket);
                 
                 console.log(content);
                 console.log('Update response:', result);
@@ -104,7 +116,7 @@ const App = () => {
                 }
             }
         }
-    }, [handleBracketSpeech]);
+    }, []);
 
     const startSpeechRecognition = useCallback(() => {
         if (!recognitionRef.current) {
@@ -215,11 +227,15 @@ const App = () => {
         console.log("Handling database change:", change);
         setArduinoDataArray(prevData => {
             const existingItem = prevData.find(item => item.id === change.id);
+
+            // Call handleBracketSpeech for added, removed, and modified states
+            handleBracketSpeech(change);
+
             if (change.touch && change.type === 'Text') {
                 setActiveTextboxId(change.id);
             }
             
-            if (change.status === 'Modified') {
+            if (change.status === 'Modified') { // Right now, only text brackets can be modified (will be different in the future)
                 const restore = window.confirm("Do you want to restore the previous content?");
                 if (restore) {
                     const previousItem = prevData.find(item => item.id === change.id && item.status === 'Removed');
@@ -252,7 +268,7 @@ const App = () => {
             }
             return prevData;
         });
-    }, [startSpeechRecognition, updateContentInDatabase]);
+    }, [startSpeechRecognition, updateContentInDatabase, handleBracketSpeech]);
 
     // Watch for database changes
     useEffect(() => {
