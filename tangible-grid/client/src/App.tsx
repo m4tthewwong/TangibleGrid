@@ -28,6 +28,9 @@ const App = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const isUserInitiatedRef = useRef(false); // Used to fix a bug where I get a random window confirmation after saving the text in a textbox
 
+    // Ref to keep track of recognition instance
+    const recognitionRef = useRef<typeof SpeechRecognition | null>(null);
+
     // Function to handle speaking based on bracket status
     const handleBracketSpeech = useCallback((bracket) => {
         let speechText = '';
@@ -104,36 +107,31 @@ const App = () => {
     }, [handleBracketSpeech]);
 
     const startSpeechRecognition = useCallback(() => {
-        let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.lang = 'en-US';
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
-        
-        let stopRecognition = false;  // Flag to control whether recognition should restart
-        let isRecognitionActive = false;  // Flag to track if recognition is active
+        if (!recognitionRef.current) {
+            recognitionRef.current = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognitionRef.current.lang = 'en-US';
+            recognitionRef.current.interimResults = false;
+            recognitionRef.current.maxAlternatives = 1;
+            recognitionRef.current.continuous = true;  // Set to continuous listening mode
+        }
     
-        // Function to continuously restart speech recognition
-        const restartRecognition = () => {
-            if (!stopRecognition && !isRecognitionActive) {  // Only restart if the stop command hasn't been issued and recognition is not already running
-                recognition.start();
-                isRecognitionActive = true;
-            }
-        };
+        const recognition = recognitionRef.current;
+    
+        let stopRecognition = false;
     
         recognition.onstart = () => {
-            isRecognitionActive = true;  // Mark recognition as active when it starts
+            console.log("Speech recognition started.");
         };
     
         recognition.onend = () => {
-            isRecognitionActive = false;  // Mark recognition as inactive when it ends
+            console.log("Speech recognition ended.");
             if (!stopRecognition) {
-                restartRecognition();  // Restart recognition if it hasn't been stopped
+                recognition.start();  // Automatically restart recognition if it ends unexpectedly
             }
         };
     
         recognition.onresult = (event) => {
-            let speechToText = event.results[0][0].transcript.toLowerCase();
-    
+            let speechToText = event.results[event.resultIndex][0].transcript.toLowerCase();
             console.log("Recognized Speech:", speechToText); // Debugging log
     
             if (speechToText.includes('stop')) {
@@ -148,8 +146,8 @@ const App = () => {
                 speechToText = speechToText.replace('title', '').trim();
                 if (speechToText) {
                     // Apply title formatting and insert the spoken text as the title
-                    document.execCommand('bold'); // Not working
-                    document.execCommand('fontSize', false, '5'); // Not working
+                    document.execCommand('bold');
+                    document.execCommand('fontSize', false, '5');
                     document.execCommand('justifyCenter');
                     document.execCommand('insertText', false, speechToText + '\n');
                     document.execCommand('removeFormat');  // Reset formatting after the title
@@ -166,15 +164,14 @@ const App = () => {
     
         recognition.onerror = (event) => {
             console.error('Speech recognition error:', event.error);
-            isRecognitionActive = false;  // Reset the active flag on error to allow restarting
             if (!stopRecognition) {
-                restartRecognition();  // Restart on error unless stopped
+                recognition.start();  // Restart on error unless stopped
             }
         };
     
         // Start the initial recognition
-        restartRecognition();
-    }, []);          
+        recognition.start();
+    }, []);            
 
     // Fetch initial data from server on component mount
     useEffect(() => {
@@ -218,10 +215,8 @@ const App = () => {
         console.log("Handling database change:", change);
         setArduinoDataArray(prevData => {
             const existingItem = prevData.find(item => item.id === change.id);
-            // Activate speech recognition if touch is true and type is Text
             if (change.touch && change.type === 'Text') {
                 setActiveTextboxId(change.id);
-                startSpeechRecognition();  // Trigger speech recognition for textboxes
             }
             
             if (change.status === 'Modified') {
@@ -241,6 +236,10 @@ const App = () => {
                     return [...updatedData];
                 }
             } else if (!existingItem && change.status === 'Added') {
+                // Activate speech recognition if touch is true and type is Text
+                if (change.touch && change.type === 'Text') {
+                    startSpeechRecognition();  // Trigger speech recognition for textboxes
+                }
                 console.log("Added prevdata:", prevData);
                 return [...prevData, { ...change }];
             } else if (existingItem && change.status === 'Removed') {
