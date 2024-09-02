@@ -28,6 +28,81 @@ const App = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const isUserInitiatedRef = useRef(false); // Used to fix a bug where I get a random window confirmation after saving the text in a textbox
 
+    // Function to handle speaking based on bracket status
+    const handleBracketSpeech = useCallback((bracket) => {
+        let speechText = '';
+
+        // General bracket information
+        const location = `at row ${bracket.top_left_row} and column ${bracket.top_left_col}`;
+        const size = `with a width of ${bracket.width} and height of ${bracket.length}`;
+
+        switch (bracket.status) {
+            case 'Added':
+                speechText = `A ${bracket.type.toLowerCase()} bracket was added ${location} ${size}.`;
+                if (bracket.type === 'Text') {
+                    speechText += ` You can add up to 25 characters.`;
+                }
+                break;
+            
+            case 'Removed':
+                speechText = `A ${bracket.type.toLowerCase()} bracket was removed.`;
+                break;
+            
+            case 'Modified':
+                speechText = `A ${bracket.type.toLowerCase()} bracket was modified ${location} ${size}.`;
+                if (bracket.type === 'Text') {
+                    const characterCount = bracket.content.length;
+                    speechText += ` The textbox currently contains ${characterCount} characters out of a maximum of 25.`;
+                }
+                break;
+            
+            default:
+                return;  // No action if status is not recognized
+        }
+
+        // Speak the constructed speech text
+        speakText(speechText);
+    }, []);
+
+    const updateContentInDatabase = useCallback(async (id, content, retries = 5) => {
+        isUserInitiatedRef.current = true; // Set the flag before updating
+        let attempts = 0;
+    
+        while (attempts < retries) {
+            try {
+                const response = await fetch(`http://localhost:3001/api/modify/id/${id}/content/${encodeURIComponent(content)}`, {
+                    method: 'POST',
+                });
+    
+                if (!response.ok) {
+                    throw new Error(`Server responded with status ${response.status}`);
+                }
+    
+                const result = await response.json();
+                setArduinoDataArray(prevData => {
+                    const updatedData = prevData.map(item => item.id === parseInt(id) ? { ...item, content } : item);
+                    console.log("Updated data after content modification:", updatedData);
+                    return [...updatedData];
+                });
+
+                const modifiedBracket = result;
+                handleBracketSpeech(modifiedBracket);
+                
+                console.log(content);
+                console.log('Update response:', result);
+                return; // Exit if successful
+            } catch (error) {
+                attempts += 1;
+                console.error(`Failed to update content, attempt ${attempts}:`, error);
+                if (attempts >= retries) {
+                    console.error('Max retries reached. Giving up.');
+                } else {
+                    console.log('Retrying...');
+                }
+            }
+        }
+    }, [handleBracketSpeech]);
+
     const startSpeechRecognition = useCallback(() => {
         let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.lang = 'en-US';
@@ -134,42 +209,6 @@ const App = () => {
         window.speechSynthesis.speak(speech);
     };
 
-    // Function to handle speaking based on bracket status
-    const handleBracketSpeech = (bracket) => {
-        let speechText = '';
-
-        // General bracket information
-        const location = `at row ${bracket.top_left_row} and column ${bracket.top_left_col}`;
-        const size = `with a width of ${bracket.width} and height of ${bracket.length}`;
-
-        switch (bracket.status) {
-            case 'Added':
-                speechText = `A ${bracket.type.toLowerCase()} bracket was added ${location} ${size}.`;
-                if (bracket.type === 'Text') {
-                    speechText += ` You can add up to 25 characters.`;
-                }
-                break;
-            
-            case 'Removed':
-                speechText = `A ${bracket.type.toLowerCase()} bracket was removed.`;
-                break;
-            
-            case 'Modified':
-                speechText = `A ${bracket.type.toLowerCase()} bracket was modified ${location} ${size}.`;
-                if (bracket.type === 'Text') {
-                    const characterCount = bracket.content.length;
-                    speechText += ` The textbox currently contains ${characterCount} characters out of a maximum of 25.`;
-                }
-                break;
-            
-            default:
-                return;  // No action if status is not recognized
-        }
-
-        // Speak the constructed speech text
-        speakText(speechText);
-    };
-
     const handleDatabaseChange = useCallback((change) => {
         if (isUserInitiatedRef.current) {
             isUserInitiatedRef.current = false;
@@ -214,7 +253,7 @@ const App = () => {
             }
             return prevData;
         });
-    }, [startSpeechRecognition]);
+    }, [startSpeechRecognition, updateContentInDatabase]);
 
     // Watch for database changes
     useEffect(() => {
@@ -233,46 +272,7 @@ const App = () => {
         };
 
         fetchChanges();
-    }, [arduinoChanges, handleDatabaseChange]);
-
-    const updateContentInDatabase = async (id, content, retries = 5) => {
-        isUserInitiatedRef.current = true; // Set the flag before updating
-        let attempts = 0;
-    
-        while (attempts < retries) {
-            try {
-                const response = await fetch(`http://localhost:3001/api/modify/id/${id}/content/${encodeURIComponent(content)}`, {
-                    method: 'POST',
-                });
-    
-                if (!response.ok) {
-                    throw new Error(`Server responded with status ${response.status}`);
-                }
-    
-                const result = await response.json();
-                setArduinoDataArray(prevData => {
-                    const updatedData = prevData.map(item => item.id === parseInt(id) ? { ...item, content } : item);
-                    console.log("Updated data after content modification:", updatedData);
-                    return [...updatedData];
-                });
-
-                const modifiedBracket = result;
-                handleBracketSpeech(modifiedBracket);
-                
-                console.log(content);
-                console.log('Update response:', result);
-                return; // Exit if successful
-            } catch (error) {
-                attempts += 1;
-                console.error(`Failed to update content, attempt ${attempts}:`, error);
-                if (attempts >= retries) {
-                    console.error('Max retries reached. Giving up.');
-                } else {
-                    console.log('Retrying...');
-                }
-            }
-        }
-    };    
+    }, [arduinoChanges, handleDatabaseChange]);    
 
     return (
         <div className="App">
