@@ -6,31 +6,35 @@ import Videobox from './Videobox.tsx';
 import Toolbar from './Toolbar.tsx';
 import { ArduinoData } from './types'; // Type definitions
 
+//ADDED FEATURES
 // ALL BRACKETS
 // If bracket added, say status, type, location, and size
 // If bracket removed, say status, type
 // If bracket modified, say status, type, location, size, and content (can be empty for text) (guaranteed empty for image/video)
-
 // TEXT BRACKETS
 // When adding text bracket, let users know the maximum number of characters they can add into the textbox (for now, one grid - 25 letters)
 // When modified text bracket, let users know the current number of characters already inputted in the textbox out of the maximum
-
 // ^Using Web Speech API's SpeechSynthesis feature
-
-// KNOWN ISSUES
-// You must say "stop" before confirming the textbox, otherwise error occurs with multiple instances of speech recognition
-// Error 404 with new arduino code - (old code - COULD POSSIBLY HAPPEN WHEN CONFIRMING EMPTY TEXT BOX) (new code - COULD POSSIBLY HAPPEN WHEN CONFIRMING ANY TEXT BOX)
-// "title" text doesn't get bolded or increased in font size
-// while speech recognition is running, the speech synthesis doesn't get run
-
-// THINGS THAT NEED TO BE TESTED
-// Test what happens when I add the textbox (one instance of speech recognition) and user clicks record (another instance)
-// See what happens if you add a textbox and remove the textbox, does it still record?
-
-// NEW FEATURES NEED TO BE ADDED
 // Keyboard number pushed is the id of the bracket that gets the information repeated
 // Have image fitted into image box with remaining white space and let the user know where the white space is through the speech synthesis
 // push "-" key to verbalize the % of empty space of the webpage
+
+// KNOWN ISSUES
+// You must say "stop" before confirming the textbox, it will keep recording (ideal fix is when you confirm a textbox, it should stop all instances of speech recognition)
+// Error 404 with new arduino code - (old code - COULD POSSIBLY HAPPEN WHEN CONFIRMING EMPTY TEXT BOX) (new code - COULD POSSIBLY HAPPEN WHEN CONFIRMING ANY TEXT BOX)
+// "title" text doesn't get bolded or increased in font size
+// while speech recognition is running, the speech synthesis doesn't get run (ideal fix for this would be to not run the speech recognition until the speech synthesis has finished running)
+// When you add a textbox (one instance of speech recognition) and user clicks record (another instance) (or perhaps if you click record twice), you get an error (probably not a big idea - can be fixed by disabling record button while speech recognition is active)
+// You have to click toolbar stuff twice for it to work except for alignment and microphone
+// if you click record, you have to click the textbox again
+
+// FIXED ISSUES
+// If you don't speak for a couple of seconds, speech recognition will end
+
+// THINGS THAT NEED TO BE TESTED
+// See what happens if you add a textbox and remove the textbox, does it still record? (possible fix would be stopping all instances of speech recognition when removing a textbox)
+
+// NEW FEATURES TO BE ADDED
 
 const App = () => {
     const [arduinoDataArray, setArduinoDataArray] = useState<ArduinoData[]>([]);
@@ -165,7 +169,7 @@ const App = () => {
         };
     
         recognition.onresult = (event) => {
-            let speechToText = event.results[event.resultIndex][0].transcript.toLowerCase();
+            let speechToText = event.results[event.resultIndex][0].transcript.toLowerCase().trim();
             console.log("Recognized Speech:", speechToText); // Debugging log
     
             if (speechToText.includes('stop')) {
@@ -181,7 +185,7 @@ const App = () => {
                 if (speechToText) {
                     // Apply title formatting and insert the spoken text as the title
                     document.execCommand('bold');
-                    document.execCommand('fontSize', false, '5');
+                    document.execCommand('fontSize', false, '20');
                     document.execCommand('justifyCenter');
                     document.execCommand('insertText', false, speechToText + '\n');
                     document.execCommand('removeFormat');  // Reset formatting after the title
@@ -198,9 +202,6 @@ const App = () => {
     
         recognition.onerror = (event) => {
             console.error('Speech recognition error:', event.error);
-            if (!stopRecognition) {
-                recognition.start();  // Restart on error unless stopped
-            }
         };
     
         // Start the initial recognition

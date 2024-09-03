@@ -39,12 +39,13 @@ const Videobox: React.FC<VideoboxProps> = ({ data, containerDimensions }) => {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
+        overflow: 'hidden', // Ensure no overflow outside the box
     };
 
     const videoStyle: React.CSSProperties = {
         width: '100%',
         height: '100%',
-        objectFit: 'cover',
+        objectFit: 'contain',
     };
 
     return (

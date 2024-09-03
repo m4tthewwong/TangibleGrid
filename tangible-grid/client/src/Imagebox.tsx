@@ -21,7 +21,30 @@ const Imagebox: React.FC<ImageboxProps> = ({ data, containerDimensions }) => {
     const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const reader = new FileReader();
-            reader.onload = (e) => setImageSrc(e.target?.result as string);
+            reader.onload = (e) => {
+                const image = new Image();
+                image.src = e.target?.result as string;
+
+                image.onload = () => {
+                    const imageAspectRatio = image.width / image.height;
+                    const boxWidth = containerDimensions.width * (data.width / 12);
+                    const boxHeight = containerDimensions.height * (data.length / 16);
+                    const boxAspectRatio = boxWidth / boxHeight;
+
+                    let speechText = '';
+
+                    if (Math.abs(imageAspectRatio - boxAspectRatio) < 0.01) {
+                        speechText = 'The image fits perfectly within the box.';
+                    } else if (imageAspectRatio > boxAspectRatio) {
+                        speechText = 'There is white space on the top and bottom.';
+                    } else {
+                        speechText = 'There is white space on the left and right.';
+                    }
+                    speakText(speechText);
+                };
+
+                setImageSrc(e.target?.result as string);
+            };
             reader.readAsDataURL(event.target.files[0]);
         }
     };
@@ -40,12 +63,21 @@ const Imagebox: React.FC<ImageboxProps> = ({ data, containerDimensions }) => {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
+        overflow: 'hidden', // Ensure no overflow outside the box
     };
 
     const imageStyle: React.CSSProperties = {
         width: '100%',
         height: '100%',
-        objectFit: 'cover',
+        objectFit: 'contain',
+    };
+
+    const speakText = (text: string) => {
+        const speech = new SpeechSynthesisUtterance(text);
+        speech.lang = 'en-US';
+        speech.pitch = 1;
+        speech.rate = 1;
+        window.speechSynthesis.speak(speech);
     };
 
     return (
