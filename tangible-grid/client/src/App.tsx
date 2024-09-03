@@ -19,7 +19,7 @@ import { ArduinoData } from './types'; // Type definitions
 
 // KNOWN ISSUES
 // You must say "stop" before confirming the textbox, otherwise error occurs with multiple instances of speech recognition
-// Error 404 with new arduino code - (COULD POSSIBLY HAPPEN WHEN CONFIRMING EMPTY TEXT BOX)
+// Error 404 with new arduino code - (old code - COULD POSSIBLY HAPPEN WHEN CONFIRMING EMPTY TEXT BOX) (new code - COULD POSSIBLY HAPPEN WHEN CONFIRMING ANY TEXT BOX)
 // "title" text doesn't get bolded or increased in font size
 // while speech recognition is running, the speech synthesis doesn't get run
 
@@ -320,6 +320,17 @@ const App = () => {
                 console.log("User pressed '-' button: ", speechText);
                 speakText(speechText);
             }
+
+            // Handling number keys 0-9 for bracket speech synthesis
+            if (event.key >= '0' && event.key <= '9' && !isTextboxFocused) {
+                const bracketId = parseInt(event.key, 10);
+                const bracket = arduinoDataArray.find(data => data.id === bracketId);
+                if (bracket) {
+                    handleBracketSpeech(bracket);
+                } else {
+                    console.log(`No bracket found with id ${bracketId}`);
+                }
+            }
         };
 
         window.addEventListener('keydown', handleKeyPress);
@@ -327,7 +338,7 @@ const App = () => {
         return () => {
             window.removeEventListener('keydown', handleKeyPress);
         };
-    }, [calculateEmptySpacePercentage, isTextboxFocused]);
+    }, [calculateEmptySpacePercentage, isTextboxFocused, arduinoDataArray, handleBracketSpeech]);
 
     return (
         <div className="App">
