@@ -26,7 +26,7 @@ const client = new MongoClient(uri, {
     }
 });
 
-// Remove after testing
+// Clears the database
 try {
     client.connect().then((value) => {
         const database = client.db("tangibleSite");
@@ -35,7 +35,6 @@ try {
     });
 } finally {
 }
-//
 
 const app = express();
 app.use(cors());
@@ -75,14 +74,14 @@ parser.on("data", async (line) => {
             );
         }
     } finally {
-        // Ensures that the client will close when you finish/error
-        //await client.close();
     }
 });
 
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
 });
+
+/* ------------------------------------------------------------- APIs ------------------------------------------------------------- */
 
 // API to get all brackets in the database on startup
 app.post("/api/init", async (req, resp) => {
@@ -98,8 +97,6 @@ app.post("/api/init", async (req, resp) => {
 
         return resp.json(output);
     } finally {
-        // Ensures that the client will close when you finish/error
-        //await client.close();
     }
 });
 
@@ -120,8 +117,6 @@ app.post("/api/modify/id/:id/content/:content", async (req, resp) => {
         );
         return resp.json(doc);
     } finally {
-        // Ensures that the client will close when you finish/error
-        //await client.close();
     }
 });
 
@@ -139,7 +134,5 @@ app.post("/api/watch", async (req, resp) => {
         }
         changeStream.close();
     } finally {
-        // Ensures that the client will close when you finish/error
-        //await client.close();
     }
 });

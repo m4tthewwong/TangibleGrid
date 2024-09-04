@@ -3,4 +3,3 @@ interface Window {
 }
   
 declare var SpeechRecognition: any;
-  

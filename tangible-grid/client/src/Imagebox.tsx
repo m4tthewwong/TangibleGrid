@@ -1,5 +1,7 @@
 import React, { useState, useRef } from 'react';
 
+/* ------------------------------------------------------------- Interfaces ------------------------------------------------------------- */
+
 interface ImageboxProps {
     data: {
         id: number;
@@ -15,9 +17,15 @@ interface ImageboxProps {
 }
 
 const Imagebox: React.FC<ImageboxProps> = ({ data, containerDimensions }) => {
+
+    /* ------------------------------------------------------------- useStates and useRefs ------------------------------------------------------------- */
+
     const inputRef = useRef<HTMLInputElement>(null);
     const [imageSrc, setImageSrc] = useState<string | null>(null);
 
+    /* ------------------------------------------------------------- Functions ------------------------------------------------------------- */
+
+    // Handles changing or adding an image to the imagebox
     const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const reader = new FileReader();
@@ -49,9 +57,21 @@ const Imagebox: React.FC<ImageboxProps> = ({ data, containerDimensions }) => {
         }
     };
 
+    // Inputting image into imagebox when clicked
     const handleClick = () => {
         inputRef.current?.click();
     };
+
+    // Speech Synthesis settings
+    const speakText = (text: string) => {
+        const speech = new SpeechSynthesisUtterance(text);
+        speech.lang = 'en-US';
+        speech.pitch = 1;
+        speech.rate = 1;
+        window.speechSynthesis.speak(speech);
+    };
+
+    /* ------------------------------------------------------------- Style ------------------------------------------------------------- */
 
     const style: React.CSSProperties = {
         position: 'absolute',
@@ -70,14 +90,6 @@ const Imagebox: React.FC<ImageboxProps> = ({ data, containerDimensions }) => {
         width: '100%',
         height: '100%',
         objectFit: 'contain',
-    };
-
-    const speakText = (text: string) => {
-        const speech = new SpeechSynthesisUtterance(text);
-        speech.lang = 'en-US';
-        speech.pitch = 1;
-        speech.rate = 1;
-        window.speechSynthesis.speak(speech);
     };
 
     return (

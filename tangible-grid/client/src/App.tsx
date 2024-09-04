@@ -6,7 +6,7 @@ import Videobox from './Videobox.tsx';
 import Toolbar from './Toolbar.tsx';
 import { ArduinoData } from './types'; // Type definitions
 
-//ADDED FEATURES
+/* ------------------------------------------------------------- Recently Added Features ------------------------------------------------------------- */
 // ALL BRACKETS
 // If bracket added, say status, type, location, and size
 // If bracket removed, say status, type
@@ -19,22 +19,22 @@ import { ArduinoData } from './types'; // Type definitions
 // Have image fitted into image box with remaining white space and let the user know where the white space is through the speech synthesis
 // push "-" key to verbalize the % of empty space of the webpage
 
-// KNOWN ISSUES
-// NOT A PROBLEM - You must say "stop" before confirming the textbox, it will keep recording (ideal fix is when you confirm a textbox, it should stop all instances of speech recognition - attempted) - ok
+/* ------------------------------------------------------------- Known Issues ------------------------------------------------------------- */
+// NOT A PROBLEM - You must say "stop" before confirming the textbox, it will keep recording (ideal fix is when you confirm a textbox, it should stop all instances of speech recognition - attempted)
 // Error 404 with new arduino code - (old code - COULD POSSIBLY HAPPEN WHEN CONFIRMING EMPTY TEXT BOX) (new code - COULD POSSIBLY HAPPEN WHEN CONFIRMING ANY TEXT BOX)
 // while speech recognition is running, the speech synthesis doesn't get run (ideal fix for this would be to not run the speech recognition until the speech synthesis has finished running)
 // When you add a textbox (one instance of speech recognition) and user clicks record (another instance) (or perhaps if you click record twice), you get an error (probably not a big idea - can be fixed by disabling record button while speech recognition is active)
 // You have to click toolbar stuff twice for it to work except for alignment and microphone
 // if you click record, you have to click the textbox again
 
-// FIXED ISSUES
+/* ------------------------------------------------------------- Fixed issues ------------------------------------------------------------- */
 // If you don't speak for a couple of seconds, speech recognition will end
 // "title" text doesn't get bolded or increased in font size
 
-// THINGS THAT NEED TO BE TESTED
+/* ------------------------------------------------------------- Things that need to be tested ------------------------------------------------------------- */
 // See what happens if you add a textbox and remove the textbox, does it still record? (possible fix would be stopping all instances of speech recognition when removing a textbox)
 
-// NEW FEATURES TO BE ADDED
+/* ------------------------------------------------------------- New features to be added ------------------------------------------------------------- */
 // "alexa end" command to confirm text in textbox
 // ctrl + id# to activate content editing for the textbox
 // make sure code ignores "touch"
@@ -72,7 +72,7 @@ const App = () => {
         return emptySpacePercentage;
     }, [arduinoDataArray, containerDimensions]);
 
-    // Function to handle speaking based on bracket status
+    // Speech Synthesis
     const handleBracketSpeech = useCallback((bracket) => {
         let speechText = '';
 
@@ -250,6 +250,7 @@ const App = () => {
         recognition.start(); // Start the initial recognition
     }, [activeTextboxId]);
 
+    // Speech Synthesis settings
     const speakText = (text) => {
         const speech = new SpeechSynthesisUtterance(text);
         speech.lang = 'en-US';
@@ -258,6 +259,7 @@ const App = () => {
         window.speechSynthesis.speak(speech);
     };
 
+    // Handles changes in the database based on inputs from the Arduino
     const handleDatabaseChange = useCallback((change) => {
         if (isUserInitiatedRef.current) {
             isUserInitiatedRef.current = false;

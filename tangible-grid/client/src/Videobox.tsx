@@ -1,5 +1,7 @@
 import React, { useState, useRef } from 'react';
 
+/* ------------------------------------------------------------- Interfaces ------------------------------------------------------------- */
+
 interface VideoboxProps {
     data: {
         id: number;
@@ -15,9 +17,15 @@ interface VideoboxProps {
 }
 
 const Videobox: React.FC<VideoboxProps> = ({ data, containerDimensions }) => {
+
+    /* ------------------------------------------------------------- useStates and useRefs ------------------------------------------------------------- */
+
     const inputRef = useRef<HTMLInputElement>(null);
     const [videoSrc, setVideoSrc] = useState<string | null>(null);
 
+    /* ------------------------------------------------------------- Functions ------------------------------------------------------------- */
+
+    // Handles changing or adding a video to the videobox
     const handleVideoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const url = URL.createObjectURL(event.target.files[0]);
@@ -25,9 +33,12 @@ const Videobox: React.FC<VideoboxProps> = ({ data, containerDimensions }) => {
         }
     };
 
+    // Inputting video into videobox when clicked
     const handleClick = () => {
         inputRef.current?.click();
     };
+
+    /* ------------------------------------------------------------- Style ------------------------------------------------------------- */
 
     const style: React.CSSProperties = {
         position: 'absolute',

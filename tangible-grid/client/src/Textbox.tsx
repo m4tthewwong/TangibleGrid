@@ -1,5 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 
+/* ------------------------------------------------------------- Interfaces ------------------------------------------------------------- */
+
 interface TextboxProps {
     data: {
         id: number;
@@ -21,8 +23,30 @@ interface TextboxProps {
 }
 
 const Textbox: React.FC<TextboxProps> = ({ data, isActive, setActiveTextboxId, containerDimensions, updateContent, onFocus, onBlur }) => {
+
+    /* ------------------------------------------------------------- useRefs ------------------------------------------------------------- */
+
     // Explicitly typing the ref as HTMLDivElement
     const textboxRef = useRef<HTMLDivElement>(null);
+
+    /* ------------------------------------------------------------- Functions ------------------------------------------------------------- */
+
+    // Sets a textbox active when it gets clicked
+    const handleClick = () => {
+        setActiveTextboxId(data.id);
+        onFocus();
+    };
+
+    // Intended to trigger an action when the Textbox loses focus
+    const handleBlur = () => {
+        // Check if textboxRef.current is not null and update the content
+        if (textboxRef.current) {
+            updateContent(data.id.toString(), textboxRef.current.innerHTML);
+        }
+        onBlur();
+    };
+
+    /* ------------------------------------------------------------- useEffects ------------------------------------------------------------- */
 
     // Focus the textbox when it becomes active
     useEffect(() => {
@@ -31,25 +55,14 @@ const Textbox: React.FC<TextboxProps> = ({ data, isActive, setActiveTextboxId, c
         }
     }, [isActive]);
 
+    // Update the content when data.content changes
     useEffect(() => {
         if (textboxRef.current) {
             textboxRef.current.innerHTML = data.content;
         }
-    }, [data.content]); // Update the content when data.content changes
+    }, [data.content]);
 
-    const handleClick = () => {
-        setActiveTextboxId(data.id);
-        onFocus();
-    };
-
-    // intended to trigger an action when the Textbox loses focus
-    const handleBlur = () => {
-        // Check if textboxRef.current is not null and update the content
-        if (textboxRef.current) {
-            updateContent(data.id.toString(), textboxRef.current.innerHTML);
-        }
-        onBlur();
-    };
+    /* ------------------------------------------------------------- Style ------------------------------------------------------------- */
 
     const style: React.CSSProperties = {
         position: 'absolute',
