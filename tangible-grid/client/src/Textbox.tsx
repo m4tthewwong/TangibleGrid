@@ -18,7 +18,6 @@ interface TextboxProps {
         height: number;
     };
     updateContent: (id: string, content: string) => void;
-
 }
 
 const Textbox: React.FC<TextboxProps> = ({ data, isActive, setActiveTextboxId, containerDimensions, updateContent, onFocus, onBlur }) => {
@@ -70,6 +69,7 @@ const Textbox: React.FC<TextboxProps> = ({ data, isActive, setActiveTextboxId, c
             contentEditable={true}
             onClick={handleClick}
             onBlur={handleBlur}
+            data-id={data.id}
         ></div>
     );
 };

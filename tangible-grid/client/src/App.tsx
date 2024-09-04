@@ -20,9 +20,8 @@ import { ArduinoData } from './types'; // Type definitions
 // push "-" key to verbalize the % of empty space of the webpage
 
 // KNOWN ISSUES
-// You must say "stop" before confirming the textbox, it will keep recording (ideal fix is when you confirm a textbox, it should stop all instances of speech recognition)
+// NOT A PROBLEM - You must say "stop" before confirming the textbox, it will keep recording (ideal fix is when you confirm a textbox, it should stop all instances of speech recognition - attempted) - ok
 // Error 404 with new arduino code - (old code - COULD POSSIBLY HAPPEN WHEN CONFIRMING EMPTY TEXT BOX) (new code - COULD POSSIBLY HAPPEN WHEN CONFIRMING ANY TEXT BOX)
-// "title" text doesn't get bolded or increased in font size
 // while speech recognition is running, the speech synthesis doesn't get run (ideal fix for this would be to not run the speech recognition until the speech synthesis has finished running)
 // When you add a textbox (one instance of speech recognition) and user clicks record (another instance) (or perhaps if you click record twice), you get an error (probably not a big idea - can be fixed by disabling record button while speech recognition is active)
 // You have to click toolbar stuff twice for it to work except for alignment and microphone
@@ -30,13 +29,19 @@ import { ArduinoData } from './types'; // Type definitions
 
 // FIXED ISSUES
 // If you don't speak for a couple of seconds, speech recognition will end
+// "title" text doesn't get bolded or increased in font size
 
 // THINGS THAT NEED TO BE TESTED
 // See what happens if you add a textbox and remove the textbox, does it still record? (possible fix would be stopping all instances of speech recognition when removing a textbox)
 
 // NEW FEATURES TO BE ADDED
+// "alexa end" command to confirm text in textbox
+// ctrl + id# to activate content editing for the textbox
+// make sure code ignores "touch"
 
 const App = () => {
+    /* ------------------------------------------------------------- useStates and useRefs ------------------------------------------------------------- */
+
     const [arduinoDataArray, setArduinoDataArray] = useState<ArduinoData[]>([]);
     const [arduinoChanges, setArduinoChanges] = useState<ArduinoData>();
     const [activeTextboxId, setActiveTextboxId] = useState<number | null>(null);
@@ -46,7 +51,9 @@ const App = () => {
     const recognitionRef = useRef<typeof SpeechRecognition | null>(null); // Ref to keep track of recognition instance
     const [isTextboxFocused, setIsTextboxFocused] = useState(false); // Track textbox focus state
 
-    // Function to calculate the percentage of empty space
+    /* ------------------------------------------------------------- Functions ------------------------------------------------------------- */
+
+    // Function to calculate the percentage of empty space on the webpage
     const calculateEmptySpacePercentage = useCallback(() => {
         if (!containerRef.current) return 100;
         
@@ -108,6 +115,7 @@ const App = () => {
         speakText(speechText);
     }, []);
 
+    // Updating content in the database with an API call
     const updateContentInDatabase = useCallback(async (id, content, retries = 5) => {
         isUserInitiatedRef.current = true; // Set the flag before updating
         let attempts = 0;
@@ -144,6 +152,7 @@ const App = () => {
         }
     }, []);
 
+    // Speech Recognition
     const startSpeechRecognition = useCallback(() => {
         if (!recognitionRef.current) {
             recognitionRef.current = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
@@ -164,33 +173,67 @@ const App = () => {
         recognition.onend = () => {
             console.log("Speech recognition ended.");
             if (!stopRecognition) {
-                recognition.start();  // Automatically restart recognition if it ends unexpectedly
+                recognition.start();  // Automatically restart recognition if it ends unexpectedly (ex. not talking)
             }
         };
     
         recognition.onresult = (event) => {
             let speechToText = event.results[event.resultIndex][0].transcript.toLowerCase().trim();
-            console.log("Recognized Speech:", speechToText); // Debugging log
+            console.log("Recognized Speech:", speechToText);
+
+            if (speechToText.includes('alexa end')) {
+                if (activeTextboxId !== null) {
+                    const activeTextbox = document.querySelector(`[data-id="${activeTextboxId}"]`);
+                    if (activeTextbox) {
+                        (activeTextbox as HTMLElement).blur();
+                        console.log(`Textbox with id ${activeTextboxId} confirmed.`);
+                    }
+                }
+            }
     
-            if (speechToText.includes('stop')) {
+            if (speechToText.includes('alexa stop')) {
                 stopRecognition = true;  // Set the flag to prevent restarting
-                recognition.stop();  // Stop recognition on command
-                console.log("Stopping recognition: ", speechToText);  // Debugging log
+                recognition.stop();
+                console.log("Stopping recognition: ", speechToText);
                 return;
             }
     
-            if (speechToText.startsWith('title')) {
-                // Remove the command part and keep the rest as the title
-                speechToText = speechToText.replace('title', '').trim();
+            if (speechToText.startsWith('alexa title')) {
+                speechToText = speechToText.replace('alexa title', '').trim(); // Remove the command part and keep the rest as the title
                 if (speechToText) {
-                    // Apply title formatting and insert the spoken text as the title
-                    document.execCommand('bold');
-                    document.execCommand('fontSize', false, '20');
-                    document.execCommand('justifyCenter');
-                    document.execCommand('insertText', false, speechToText + '\n');
-                    document.execCommand('removeFormat');  // Reset formatting after the title
+                    const focusedElement = document.activeElement;
+                    if (focusedElement && focusedElement.tagName === 'DIV' && focusedElement.getAttribute('contenteditable')) {
+                        // Creating a span with the desired styles and inserting it (since execCommand decided to not work)
+                        const span = document.createElement('span');
+                        span.style.fontSize = '20px';
+                        span.style.fontWeight = 'bold';
+                        span.textContent = speechToText;
+                    
+                        const selection = window.getSelection();
+                        if (selection && selection.rangeCount > 0) {
+                            const range = selection.getRangeAt(0);
+                            range.deleteContents();
+                            range.insertNode(span);
+                        
+                            // Move the cursor after the span
+                            range.setStartAfter(span);
+                            range.setEndAfter(span);
+
+                            // Insert the new line after the title text
+                            const br = document.createElement('br');
+                            range.insertNode(br);
+                        
+                            // Adjust the selection range to be after the <br> element
+                            range.setStartAfter(br);
+                            range.setEndAfter(br);
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                        }
+                    }
                 }
-            } else {
+            } 
+
+            if (speechToText.startsWith('alexa')) {
                 if (speechToText) {
                     // Remove any existing formatting and insert normal text
                     document.execCommand('removeFormat');
@@ -204,11 +247,106 @@ const App = () => {
             console.error('Speech recognition error:', event.error);
         };
     
-        // Start the initial recognition
-        recognition.start();
-    }, []);            
+        recognition.start(); // Start the initial recognition
+    }, [activeTextboxId]);
 
-    // Fetch initial data from server on component mount
+    const speakText = (text) => {
+        const speech = new SpeechSynthesisUtterance(text);
+        speech.lang = 'en-US';
+        speech.pitch = 1;
+        speech.rate = 1;
+        window.speechSynthesis.speak(speech);
+    };
+
+    const handleDatabaseChange = useCallback((change) => {
+        if (isUserInitiatedRef.current) {
+            isUserInitiatedRef.current = false;
+            return;
+        }
+
+        console.log("Handling database change:", change);
+        setArduinoDataArray(prevData => {
+            const existingItem = prevData.find(item => item.id === change.id);
+
+            // Call handleBracketSpeech for added, removed, and modified states
+            handleBracketSpeech(change);
+
+            // if (change.touch && change.type === 'Text') {
+                // setActiveTextboxId(change.id);
+            // }
+            if (change.type === 'Text') {
+                setActiveTextboxId(change.id);
+            }
+            
+            if (change.status === 'Modified') { // Right now, only text brackets can be modified (will be different in the future)
+                const restore = window.confirm("Do you want to restore the previous content?");
+                if (restore) {
+                    const previousItem = prevData.find(item => item.id === change.id && item.status === 'Removed');
+                    if (previousItem) {
+                        change.content = previousItem.content;
+                    }
+                    const updatedData = prevData.map(item => item.id === change.id ? { ...change, content: change.content, status: 'Modified' } : item);
+                    console.log("Updated data after restoring:", updatedData);
+                    return [...updatedData];
+                } else {
+                    updateContentInDatabase(change.id, " ");
+                    const updatedData = prevData.map(item => item.id === change.id ? { ...change, content: " ", status: 'Modified' } : item);
+                    console.log("Updated data after not restoring:", updatedData);
+                    return [...updatedData];
+                }
+            } else if (!existingItem && change.status === 'Added') {
+                // Activate speech recognition if touch is true and type is Text
+                // if (change.touch && change.type === 'Text') {
+
+                // Activate speech recognition if type is Text (we are ignoring touch for now)
+                if (change.type === 'Text') {
+                    startSpeechRecognition();  // Trigger speech recognition for textboxes
+                }
+                console.log("Added prevdata:", prevData);
+                return [...prevData, { ...change }];
+            } else if (existingItem && change.status === 'Removed') {
+                const updatedData = prevData.map(item => item.id === change.id ? { ...existingItem, status: "Removed" } : item);
+                console.log("Prev data: ", prevData);
+                return [...updatedData];
+            } else if (existingItem) {
+                const updatedData = prevData.map(item => item.id === change.id ? change : item);
+                return [...updatedData];
+            }
+            return prevData;
+        });
+    }, [startSpeechRecognition, updateContentInDatabase, handleBracketSpeech]);
+
+    /* ------------------------------------------------------------- useEffects ------------------------------------------------------------- */
+    
+    // Using ctrl + {bracket id} to focus the textbox with an id of {bracket id}
+    useEffect(() => {
+        const handleCtrlPlusNumber = (event: KeyboardEvent) => {
+            if (event.ctrlKey && event.key >= '0' && event.key <= '3') { // NOTE: This assumes that textbox id can range from 0 to 3 inclusive
+                const bracketId = parseInt(event.key, 10);
+                const bracket = arduinoDataArray.find(data => data.id === bracketId);
+
+                if (bracket && bracket.type === 'Text') {
+                    setActiveTextboxId(bracketId);
+                    setTimeout(() => {
+                        const textbox = document.querySelector(`[data-id="${bracketId}"]`) as HTMLElement;
+                        if (textbox) {
+                            textbox.focus();
+                        }
+                    }, 0);
+                } else {
+                    console.log(`No textbox found with id ${bracketId}`);
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleCtrlPlusNumber);
+
+        return () => {
+            window.removeEventListener('keydown', handleCtrlPlusNumber);
+        };
+    }, [arduinoDataArray]);
+
+    // Fetch initial data from server on component mount with API call
     useEffect(() => {
         const initFetch = async () => {
             try {
@@ -233,67 +371,7 @@ const App = () => {
         }
     }, []);
 
-    const speakText = (text) => {
-        const speech = new SpeechSynthesisUtterance(text);
-        speech.lang = 'en-US';
-        speech.pitch = 1;
-        speech.rate = 1;
-        window.speechSynthesis.speak(speech);
-    };
-
-    const handleDatabaseChange = useCallback((change) => {
-        if (isUserInitiatedRef.current) {
-            isUserInitiatedRef.current = false;
-            return;
-        }
-
-        console.log("Handling database change:", change);
-        setArduinoDataArray(prevData => {
-            const existingItem = prevData.find(item => item.id === change.id);
-
-            // Call handleBracketSpeech for added, removed, and modified states
-            handleBracketSpeech(change);
-
-            if (change.touch && change.type === 'Text') {
-                setActiveTextboxId(change.id);
-            }
-            
-            if (change.status === 'Modified') { // Right now, only text brackets can be modified (will be different in the future)
-                const restore = window.confirm("Do you want to restore the previous content?");
-                if (restore) {
-                    const previousItem = prevData.find(item => item.id === change.id && item.status === 'Removed');
-                    if (previousItem) {
-                        change.content = previousItem.content;
-                    }
-                    const updatedData = prevData.map(item => item.id === change.id ? { ...change, content: change.content, status: 'Modified' } : item);
-                    console.log("Updated data after restoring:", updatedData);
-                    return [...updatedData];
-                } else {
-                    updateContentInDatabase(change.id, " ");
-                    const updatedData = prevData.map(item => item.id === change.id ? { ...change, content: " ", status: 'Modified' } : item);
-                    console.log("Updated data after not restoring:", updatedData);
-                    return [...updatedData];
-                }
-            } else if (!existingItem && change.status === 'Added') {
-                // Activate speech recognition if touch is true and type is Text
-                if (change.touch && change.type === 'Text') {
-                    startSpeechRecognition();  // Trigger speech recognition for textboxes
-                }
-                console.log("Added prevdata:", prevData);
-                return [...prevData, { ...change }];
-            } else if (existingItem && change.status === 'Removed') {
-                const updatedData = prevData.map(item => item.id === change.id ? { ...existingItem, status: "Removed" } : item);
-                console.log("Prev data: ", prevData);
-                return [...updatedData];
-            } else if (existingItem) {
-                const updatedData = prevData.map(item => item.id === change.id ? change : item);
-                return [...updatedData];
-            }
-            return prevData;
-        });
-    }, [startSpeechRecognition, updateContentInDatabase, handleBracketSpeech]);
-
-    // Watch for database changes
+    // Watch for database changes with API call
     useEffect(() => {
         const fetchChanges = async () => {
             try {
@@ -312,9 +390,10 @@ const App = () => {
         fetchChanges();
     }, [arduinoChanges, handleDatabaseChange]);    
 
-    // Listen for "-" key press to announce the empty space percentage
+    // Listening for Keyboard Events
     useEffect(() => {
         const handleKeyPress = (event: KeyboardEvent) => {
+            // Listen for "-" key press to announce the empty space percentage
             if (event.key === '-' && !isTextboxFocused) {
                 const emptySpacePercentage = calculateEmptySpacePercentage();
                 const speechText = `The webpage is ${emptySpacePercentage.toFixed(2)} percent empty.`;
