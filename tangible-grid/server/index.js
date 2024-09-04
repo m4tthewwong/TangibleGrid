@@ -4,17 +4,21 @@ const { SerialPort } = require("serialport");
 const { ReadlineParser } = require("@serialport/parser-readline");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 
-// MongoDB Credentials
-//const credentials = "../../MongoDB.pem";
+/* ------------------------------------------------------------- Serial Port ------------------------------------------------------------- */
 
-/*const client = new MongoClient(
-    //"mongodb+srv://mwong119:rB7BybC6WnmA32fD@cluster0.gkqvc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
-    "mongodb+srv://jsli:tangibleSite_password@tangiblesite-cluster-0.xlksc.mongodb.net/?retryWrites=true&w=majority&appName=TangibleSite-Cluster-0",
-    {
-        //tlsCertificateKeyFile: credentials,
-        serverApi: ServerApiVersion.v1,
-    }
-);*/
+const app = express();
+app.use(cors());
+const port = 3001;
+
+const serialPort = new SerialPort({ path: "COM3", baudRate: 9600 });
+const parser = new ReadlineParser();
+serialPort.pipe(parser);
+
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+});
+
+/* ------------------------------------------------------------- MongoDB Connection ------------------------------------------------------------- */
 
 const uri = "mongodb+srv://jsli:tangibleSite_password@tangiblesite-cluster-0.xlksc.mongodb.net/?retryWrites=true&w=majority&appName=TangibleSite-Cluster-0";
 
@@ -26,6 +30,8 @@ const client = new MongoClient(uri, {
     }
 });
 
+/* ------------------------------------------------------------- MongoDB Clear Database ------------------------------------------------------------- */
+
 // Clears the database
 try {
     client.connect().then((value) => {
@@ -36,13 +42,7 @@ try {
 } finally {
 }
 
-const app = express();
-app.use(cors());
-const port = 3001;
-
-const serialPort = new SerialPort({ path: "COM3", baudRate: 9600 });
-const parser = new ReadlineParser();
-serialPort.pipe(parser);
+/* ------------------------------------------------------------- Receiving data from Arduino ------------------------------------------------------------- */
 
 // Updates the database when there is a new update from the arduino
 parser.on("data", async (line) => {
@@ -75,10 +75,6 @@ parser.on("data", async (line) => {
         }
     } finally {
     }
-});
-
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
 });
 
 /* ------------------------------------------------------------- APIs ------------------------------------------------------------- */

@@ -192,6 +192,14 @@ const App = () => {
             }
     
             if (speechToText.includes('alexa stop')) {
+                if (activeTextboxId !== null) {
+                    const activeTextbox = document.querySelector(`[data-id="${activeTextboxId}"]`);
+                    if (activeTextbox) {
+                        (activeTextbox as HTMLElement).blur();
+                        console.log(`Textbox with id ${activeTextboxId} confirmed.`);
+                    }
+                }
+
                 stopRecognition = true;  // Set the flag to prevent restarting
                 recognition.stop();
                 console.log("Stopping recognition: ", speechToText);
@@ -199,6 +207,7 @@ const App = () => {
             }
     
             if (speechToText.startsWith('alexa title')) {
+                console.log("Debugging: ", speechToText);
                 speechToText = speechToText.replace('alexa title', '').trim(); // Remove the command part and keep the rest as the title
                 if (speechToText) {
                     const focusedElement = document.activeElement;
@@ -235,6 +244,7 @@ const App = () => {
 
             if (speechToText.startsWith('alexa')) {
                 if (speechToText) {
+                    speechToText = speechToText.replace('alexa', '').trim(); // Remove the command part and keep the rest as the text
                     // Remove any existing formatting and insert normal text
                     document.execCommand('removeFormat');
                     document.execCommand('justifyLeft');
@@ -322,29 +332,39 @@ const App = () => {
     
     // Using ctrl + {bracket id} to focus the textbox with an id of {bracket id}
     useEffect(() => {
-        const handleCtrlPlusNumber = (event: KeyboardEvent) => {
-            if (event.ctrlKey && event.key >= '0' && event.key <= '3') { // NOTE: This assumes that textbox id can range from 0 to 3 inclusive
+        const handleAltPlusNumber = (event: KeyboardEvent) => {
+            if (event.altKey && event.key >= '0' && event.key <= '9') {
                 const bracketId = parseInt(event.key, 10);
                 const bracket = arduinoDataArray.find(data => data.id === bracketId);
 
-                if (bracket && bracket.type === 'Text') {
-                    setActiveTextboxId(bracketId);
-                    setTimeout(() => {
-                        const textbox = document.querySelector(`[data-id="${bracketId}"]`) as HTMLElement;
-                        if (textbox) {
-                            textbox.focus();
+                if (bracket) {
+                    if (bracket.type === 'Text') {
+                        setActiveTextboxId(bracketId);
+                        setTimeout(() => {
+                            const textbox = document.querySelector(`[data-id="${bracketId}"]`) as HTMLElement;
+                            if (textbox) {
+                                textbox.focus();
+                            }
+                        }, 0);
+                    } else if (bracket.type === 'Image' || bracket.type === 'Video') {
+                        // Trigger a click event on the corresponding file input
+                        const fileInput = document.querySelector(`#file-input-${bracketId}`) as HTMLInputElement;
+                        if (fileInput) {
+                            fileInput.click();
                         }
-                    }, 0);
+                    } else {
+                        console.log(`No supported action for bracket id ${bracketId}`);
+                    }
                 } else {
-                    console.log(`No textbox found with id ${bracketId}`);
+                    console.log(`No bracket found with id ${bracketId}`);
                 }
             }
         };
 
-        window.addEventListener('keydown', handleCtrlPlusNumber);
+        window.addEventListener('keydown', handleAltPlusNumber);
 
         return () => {
-            window.removeEventListener('keydown', handleCtrlPlusNumber);
+            window.removeEventListener('keydown', handleAltPlusNumber);
         };
     }, [arduinoDataArray]);
 
@@ -442,9 +462,9 @@ const App = () => {
                                 />
                             );
                         case 'Image':
-                            return <Imagebox key={data.id} data={data} containerDimensions={containerDimensions} />;
+                            return <Imagebox key={data.id} data={data} containerDimensions={containerDimensions} bracketId={data.id} />;
                         case 'Video':
-                            return <Videobox key={data.id} data={data} containerDimensions={containerDimensions} />;
+                            return <Videobox key={data.id} data={data} containerDimensions={containerDimensions} bracketId={data.id} />;
                         default:
                             return null;
                     }

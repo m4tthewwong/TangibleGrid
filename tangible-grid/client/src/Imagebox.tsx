@@ -14,9 +14,10 @@ interface ImageboxProps {
         width: number;
         height: number;
     };
+    bracketId: number;
 }
 
-const Imagebox: React.FC<ImageboxProps> = ({ data, containerDimensions }) => {
+const Imagebox: React.FC<ImageboxProps> = ({ data, containerDimensions, bracketId }) => {
 
     /* ------------------------------------------------------------- useStates and useRefs ------------------------------------------------------------- */
 
@@ -94,7 +95,7 @@ const Imagebox: React.FC<ImageboxProps> = ({ data, containerDimensions }) => {
 
     return (
         <div style={style} onClick={handleClick}>
-            <input type="file" accept="image/*" ref={inputRef} style={{ display: 'none' }} onChange={handleImageChange} />
+            <input type="file" accept="image/*" ref={inputRef} style={{ display: 'none' }} id={`file-input-${bracketId}`} onChange={handleImageChange} />
             {imageSrc && <img src={imageSrc} alt="Uploaded" style={imageStyle} />}
         </div>
     );

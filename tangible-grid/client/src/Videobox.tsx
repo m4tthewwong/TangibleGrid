@@ -14,9 +14,10 @@ interface VideoboxProps {
         width: number;
         height: number;
     };
+    bracketId: number;
 }
 
-const Videobox: React.FC<VideoboxProps> = ({ data, containerDimensions }) => {
+const Videobox: React.FC<VideoboxProps> = ({ data, containerDimensions, bracketId }) => {
 
     /* ------------------------------------------------------------- useStates and useRefs ------------------------------------------------------------- */
 
@@ -61,7 +62,7 @@ const Videobox: React.FC<VideoboxProps> = ({ data, containerDimensions }) => {
 
     return (
         <div style={style} onClick={handleClick}>
-            <input type="file" accept="video/*" ref={inputRef} style={{ display: 'none' }} onChange={handleVideoChange} />
+            <input type="file" accept="video/*" ref={inputRef} style={{ display: 'none' }} id={`file-input-${bracketId}`} onChange={handleVideoChange} />
             {videoSrc && <video src={videoSrc} controls style={videoStyle} />}
         </div>
     );
