@@ -12,12 +12,15 @@ import { ArduinoData } from './types'; // Type definitions
 // If bracket removed, say status, type
 // If bracket modified, say status, type, location, size, and content (can be empty for text) (guaranteed empty for image/video)
 // TEXT BRACKETS
-// When adding text bracket, let users know the maximum number of characters they can add into the textbox (for now, one grid - 25 letters)
+// When adding text bracket, let users know the maximum number of characters they can add into the textbox (for now, one grid - 16 letters)
 // When modified text bracket, let users know the current number of characters already inputted in the textbox out of the maximum
 // ^Using Web Speech API's SpeechSynthesis feature
 // Keyboard number pushed is the id of the bracket that gets the information repeated
 // Have image fitted into image box with remaining white space and let the user know where the white space is through the speech synthesis
 // push "-" key to verbalize the % of empty space of the webpage
+// "alexa end" command to confirm text in textbox
+// alt + id# to focus textboxes, imageboxes, and videoboxes
+// make sure code ignores "touch"
 
 /* ------------------------------------------------------------- Known Issues ------------------------------------------------------------- */
 // NOT A PROBLEM - You must say "stop" before confirming the textbox, it will keep recording (ideal fix is when you confirm a textbox, it should stop all instances of speech recognition - attempted)
@@ -27,17 +30,22 @@ import { ArduinoData } from './types'; // Type definitions
 // You have to click toolbar stuff twice for it to work except for alignment and microphone
 // if you click record, you have to click the textbox again
 
+// alexa stop doesn't confirm (don't use alexa end)
+
 /* ------------------------------------------------------------- Fixed issues ------------------------------------------------------------- */
 // If you don't speak for a couple of seconds, speech recognition will end
 // "title" text doesn't get bolded or increased in font size
+// White space between brackets
 
 /* ------------------------------------------------------------- Things that need to be tested ------------------------------------------------------------- */
 // See what happens if you add a textbox and remove the textbox, does it still record? (possible fix would be stopping all instances of speech recognition when removing a textbox)
 
 /* ------------------------------------------------------------- New features to be added ------------------------------------------------------------- */
-// "alexa end" command to confirm text in textbox
-// ctrl + id# to activate content editing for the textbox
-// make sure code ignores "touch"
+// 3) Verbalize AND repeat the empty number of rows and columns on the edges of the imagebox if bigger than one column or row and repeat image file name
+// 2) Calculate recommended characters
+// 1) Change normal text to 50, remove formatting from the title, default text needs to be 50px
+// 4) Doesn't verbalize first bracket
+// 5) Text overflowing
 
 const App = () => {
     /* ------------------------------------------------------------- useStates and useRefs ------------------------------------------------------------- */
@@ -84,7 +92,7 @@ const App = () => {
             case 'Added':
                 speechText = `A ${bracket.type.toLowerCase()} bracket was added ${location} ${size}.`;
                 if (bracket.type === 'Text') {
-                    speechText += ` You can add up to ${bracket.width * bracket.length * 25} characters.`;
+                    speechText += ` You can add up to ${bracket.width * bracket.length * 16} characters.`;
                 }
                 break;
             
@@ -102,7 +110,7 @@ const App = () => {
                     } else {
                         speechText += ` There is no content in the textbox.`;
                     }
-                    speechText += ` The textbox currently contains ${characterCount} characters out of a maximum of ${bracket.width * bracket.length * 25}.`;
+                    speechText += ` The textbox currently contains ${characterCount} characters out of a maximum of ${bracket.width * bracket.length * 16}.`;
                 }
                 break;
             
@@ -207,14 +215,13 @@ const App = () => {
             }
     
             if (speechToText.startsWith('alexa title')) {
-                console.log("Debugging: ", speechToText);
                 speechToText = speechToText.replace('alexa title', '').trim(); // Remove the command part and keep the rest as the title
                 if (speechToText) {
                     const focusedElement = document.activeElement;
                     if (focusedElement && focusedElement.tagName === 'DIV' && focusedElement.getAttribute('contenteditable')) {
                         // Creating a span with the desired styles and inserting it (since execCommand decided to not work)
                         const span = document.createElement('span');
-                        span.style.fontSize = '20px';
+                        span.style.fontSize = '80px';
                         span.style.fontWeight = 'bold';
                         span.textContent = speechToText;
                     
@@ -243,14 +250,39 @@ const App = () => {
             } 
 
             if (speechToText.startsWith('alexa')) {
+                speechToText = speechToText.replace('alexa', '').trim(); // Remove the command part and keep the rest as the title
                 if (speechToText) {
-                    speechToText = speechToText.replace('alexa', '').trim(); // Remove the command part and keep the rest as the text
-                    // Remove any existing formatting and insert normal text
-                    document.execCommand('removeFormat');
-                    document.execCommand('justifyLeft');
-                    document.execCommand('insertText', false, speechToText + '\n');
+                    const focusedElement = document.activeElement;
+                    if (focusedElement && focusedElement.tagName === 'DIV' && focusedElement.getAttribute('contenteditable')) {
+                        // Creating a span with the desired styles and inserting it (since execCommand decided to not work)
+                        const span = document.createElement('span');
+                        span.style.fontSize = '40px';
+                        span.style.fontWeight = 'normal';
+                        span.textContent = speechToText;
+                        
+                        const selection = window.getSelection();
+                        if (selection && selection.rangeCount > 0) {
+                            const range = selection.getRangeAt(0);
+                            range.deleteContents();
+                            range.insertNode(span);
+                            
+                            // Move the cursor after the span
+                            range.setStartAfter(span);
+                            range.setEndAfter(span);
+                            
+                            // Insert the new line after the title text
+                            const br = document.createElement('br');
+                            range.insertNode(br);
+                            
+                            // Adjust the selection range to be after the <br> element
+                            range.setStartAfter(br);
+                            range.setEndAfter(br);
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                        }
+                    }
                 }
-            }
+            }            
         };
     
         recognition.onerror = (event) => {
@@ -389,6 +421,7 @@ const App = () => {
         if (containerRef.current) {
             const { width } = containerRef.current.getBoundingClientRect();
             const height = (4 / 3) * width;
+            console.log("Dimensions: ", width, height);
             setContainerDimensions({ width, height });
         }
     }, []);

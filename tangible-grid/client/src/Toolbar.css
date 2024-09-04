@@ -2,7 +2,7 @@
     display: flex;
     justify-content: flex-start;
     align-items: center; /* Not working for some reason lol idk why */
-    background-color: #ffffff;
+    background-color: rgb(221, 221, 221);
     border-bottom: 1px solid #d1d5da;
     box-shadow: 0 1px 3px 0 rgba(60,64,67,.2), 0 4px 8px 3px rgba(60,64,67,.15);
     padding: 4px 8px;

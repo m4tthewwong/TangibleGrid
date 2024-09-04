@@ -66,13 +66,15 @@ const Textbox: React.FC<TextboxProps> = ({ data, isActive, setActiveTextboxId, c
 
     const style: React.CSSProperties = {
         position: 'absolute',
-        left: `${((data.top_left_col) / 12) * containerDimensions.width}px`,
-        top: `${((data.top_left_row) / 16) * containerDimensions.height}px`,
-        width: `${(((data.width) / 12) * containerDimensions.width)}px`,
-        height: `${((data.length) / 16) * containerDimensions.height}px`,
+        left: `${(((data.top_left_col) / 12) * containerDimensions.width) + 10}px`,
+        top: `${(((data.top_left_row) / 16) * containerDimensions.height) + 10}px`,
+        width: `${(((data.width + 1) / 12) * containerDimensions.width) - 20}px`,
+        height: `${(((data.length + 1) / 16) * containerDimensions.height) - 20}px`,
         border: '3px double grey',
-        padding: '10px',
         textAlign: 'left',
+        backgroundColor: '#e0f7fa',
+        borderRadius: '10px',
+        fontSize: '40px',
     };
 
     return (
