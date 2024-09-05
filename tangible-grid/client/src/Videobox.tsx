@@ -52,7 +52,7 @@ const Videobox: React.FC<VideoboxProps> = ({ data, containerDimensions, bracketI
         justifyContent: 'center',
         alignItems: 'center',
         overflow: 'hidden', // Ensure no overflow outside the box
-        backgroundColor: '#fff9c4',
+        backgroundColor: '#FAF9F6',
         borderRadius: '10px',
     };
 

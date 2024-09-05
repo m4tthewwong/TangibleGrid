@@ -21,6 +21,9 @@ import { ArduinoData } from './types'; // Type definitions
 // "alexa end" command to confirm text in textbox
 // alt + id# to focus textboxes, imageboxes, and videoboxes
 // make sure code ignores "touch"
+// 3) Verbalize AND repeat the empty number of rows and columns on the edges of the imagebox if bigger than one column or row and repeat image file name
+// 2) Calculate recommended characters
+// 1) Change normal text to 40, remove formatting from the title, default text needs to be 40px
 
 /* ------------------------------------------------------------- Known Issues ------------------------------------------------------------- */
 // NOT A PROBLEM - You must say "stop" before confirming the textbox, it will keep recording (ideal fix is when you confirm a textbox, it should stop all instances of speech recognition - attempted)
@@ -41,11 +44,11 @@ import { ArduinoData } from './types'; // Type definitions
 // See what happens if you add a textbox and remove the textbox, does it still record? (possible fix would be stopping all instances of speech recognition when removing a textbox)
 
 /* ------------------------------------------------------------- New features to be added ------------------------------------------------------------- */
-// 3) Verbalize AND repeat the empty number of rows and columns on the edges of the imagebox if bigger than one column or row and repeat image file name
-// 2) Calculate recommended characters
-// 1) Change normal text to 50, remove formatting from the title, default text needs to be 50px
 // 4) Doesn't verbalize first bracket
-// 5) Text overflowing
+// not a priority) Text overflowing - get rid of scroll bar
+// didn't bold with voice button on the toolbar
+// speaks multiple times
+// speaks after text confirmation?
 
 const App = () => {
     /* ------------------------------------------------------------- useStates and useRefs ------------------------------------------------------------- */
@@ -58,8 +61,17 @@ const App = () => {
     const isUserInitiatedRef = useRef(false); // Used to fix a bug where I get a random window confirmation after saving the text in a textbox
     const recognitionRef = useRef<typeof SpeechRecognition | null>(null); // Ref to keep track of recognition instance
     const [isTextboxFocused, setIsTextboxFocused] = useState(false); // Track textbox focus state
+    const [imageFileNames, setImageFileNames] = useState<{ [key: number]: string }>({});
 
     /* ------------------------------------------------------------- Functions ------------------------------------------------------------- */
+
+    // Set the image file name in the state
+    const setImageFileName = (id: number, fileName: string) => {
+        setImageFileNames((prev) => ({
+            ...prev,
+            [id]: fileName,
+        }));
+    };
 
     // Function to calculate the percentage of empty space on the webpage
     const calculateEmptySpacePercentage = useCallback(() => {
@@ -94,6 +106,60 @@ const App = () => {
                 if (bracket.type === 'Text') {
                     speechText += ` You can add up to ${bracket.width * bracket.length * 16} characters.`;
                 }
+                if (bracket.type === 'Image') {
+                    // Calculate empty rows/columns based on the image
+                    const imageElement = document.querySelector(`#file-input-${bracket.id}`);
+                    const imageBox = document.querySelector(`[data-id="${bracket.id}"]`) as HTMLElement;
+            
+                    if (imageElement && imageBox) {
+                        const boxWidth = containerDimensions.width * (bracket.width / 12);
+                        const boxHeight = containerDimensions.height * (bracket.length / 16);
+                        const columnWidth = containerDimensions.width / 12;
+                        const rowHeight = containerDimensions.height / 16;
+                        
+                        if (imageBox.querySelector('img')) {
+                            const img = imageBox.querySelector('img') as HTMLImageElement;
+                            const imageAspectRatio = img.naturalWidth / img.naturalHeight;
+                            const boxAspectRatio = boxWidth / boxHeight;
+            
+                            if (Math.abs(imageAspectRatio - boxAspectRatio) < 0.01) {
+                                speechText += ` The image fits perfectly in the box.`;
+                            } else if (imageAspectRatio > boxAspectRatio) {
+                                const emptyHeight = boxHeight - (boxWidth / imageAspectRatio);
+                                const emptyRows = emptyHeight / rowHeight;
+                                const fullRows = Math.floor(emptyRows / 2);
+                                if (fullRows > 1) {
+                                    speechText = `There are ${fullRows} empty rows each on the top and bottom.`;
+                                } else if (fullRows === 1) {
+                                    speechText = `There is ${fullRows} empty row each on the top and bottom.`;
+                                } else {
+                                    speechText = 'The image fits in the box.';
+                                }
+                            } else {
+                                const emptyWidth = boxWidth - (boxHeight * imageAspectRatio);
+                                const emptyColumns = emptyWidth / columnWidth;
+                                const fullColumns = Math.floor(emptyColumns / 2);
+                                if (fullColumns > 1) {
+                                    speechText = `There are ${fullColumns} empty columns each on the left and right.`;
+                                } else if (fullColumns === 1) {
+                                    speechText = `There is ${fullColumns} empty column each on the left and right.`;
+                                } else {
+                                    speechText = 'The image fits in the box.';
+                                }
+                            }
+            
+                            // Add the image filename to the speech
+                            const fileName = imageFileNames[bracket.id];
+                            if (fileName) {
+                                speechText += ` The image file name is ${fileName}.`;
+                            }
+
+                            console.log("Filename: ", fileName);
+                        } else {
+                            speechText += ` The imagebox is empty.`;
+                        }
+                    }
+                }
                 break;
             
             case 'Removed':
@@ -121,7 +187,7 @@ const App = () => {
         // Speak the constructed speech text
         console.log("Speech Text: ", speechText);
         speakText(speechText);
-    }, []);
+    }, [containerDimensions, imageFileNames]);
 
     // Updating content in the database with an API call
     const updateContentInDatabase = useCallback(async (id, content, retries = 5) => {
@@ -362,10 +428,12 @@ const App = () => {
 
     /* ------------------------------------------------------------- useEffects ------------------------------------------------------------- */
     
-    // Using ctrl + {bracket id} to focus the textbox with an id of {bracket id}
+    // Listening for Keyboard Events
     useEffect(() => {
-        const handleAltPlusNumber = (event: KeyboardEvent) => {
+        const handleKeyPress = (event: KeyboardEvent) => {
+            // Check if Alt is pressed
             if (event.altKey && event.key >= '0' && event.key <= '9') {
+                // Handle Alt + number (focus specific textbox/imagebox/videobox)
                 const bracketId = parseInt(event.key, 10);
                 const bracket = arduinoDataArray.find(data => data.id === bracketId);
 
@@ -384,21 +452,37 @@ const App = () => {
                         if (fileInput) {
                             fileInput.click();
                         }
-                    } else {
-                        console.log(`No supported action for bracket id ${bracketId}`);
                     }
                 } else {
                     console.log(`No bracket found with id ${bracketId}`);
                 }
+            } 
+            // Handle only number key press (without Alt)
+            else if (!event.altKey && event.key >= '0' && event.key <= '9') {
+                const bracketId = parseInt(event.key, 10);
+                const bracket = arduinoDataArray.find(data => data.id === bracketId);
+                if (bracket) {
+                    handleBracketSpeech(bracket);
+                } else {
+                    console.log(`No bracket found with id ${bracketId}`);
+                }
+            }
+
+            // Handle "-" key press to announce the empty space percentage
+            if (!event.altKey && event.key === '-') {
+                const emptySpacePercentage = calculateEmptySpacePercentage();
+                const speechText = `The webpage is ${emptySpacePercentage.toFixed(2)} percent empty.`;
+                console.log("User pressed '-' button: ", speechText);
+                speakText(speechText);
             }
         };
 
-        window.addEventListener('keydown', handleAltPlusNumber);
+        window.addEventListener('keydown', handleKeyPress);
 
         return () => {
-            window.removeEventListener('keydown', handleAltPlusNumber);
+            window.removeEventListener('keydown', handleKeyPress);
         };
-    }, [arduinoDataArray]);
+    }, [calculateEmptySpacePercentage, isTextboxFocused, arduinoDataArray, handleBracketSpeech]);
 
     // Fetch initial data from server on component mount with API call
     useEffect(() => {
@@ -445,36 +529,6 @@ const App = () => {
         fetchChanges();
     }, [arduinoChanges, handleDatabaseChange]);    
 
-    // Listening for Keyboard Events
-    useEffect(() => {
-        const handleKeyPress = (event: KeyboardEvent) => {
-            // Listen for "-" key press to announce the empty space percentage
-            if (event.key === '-' && !isTextboxFocused) {
-                const emptySpacePercentage = calculateEmptySpacePercentage();
-                const speechText = `The webpage is ${emptySpacePercentage.toFixed(2)} percent empty.`;
-                console.log("User pressed '-' button: ", speechText);
-                speakText(speechText);
-            }
-
-            // Handling number keys 0-9 for bracket speech synthesis
-            if (event.key >= '0' && event.key <= '9' && !isTextboxFocused) {
-                const bracketId = parseInt(event.key, 10);
-                const bracket = arduinoDataArray.find(data => data.id === bracketId);
-                if (bracket) {
-                    handleBracketSpeech(bracket);
-                } else {
-                    console.log(`No bracket found with id ${bracketId}`);
-                }
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyPress);
-
-        return () => {
-            window.removeEventListener('keydown', handleKeyPress);
-        };
-    }, [calculateEmptySpacePercentage, isTextboxFocused, arduinoDataArray, handleBracketSpeech]);
-
     return (
         <div className="App">
             <Toolbar activeTextboxId={activeTextboxId} />
@@ -495,7 +549,7 @@ const App = () => {
                                 />
                             );
                         case 'Image':
-                            return <Imagebox key={data.id} data={data} containerDimensions={containerDimensions} bracketId={data.id} />;
+                            return <Imagebox key={data.id} data={data} containerDimensions={containerDimensions} bracketId={data.id} setImageFileName={setImageFileName} />;
                         case 'Video':
                             return <Videobox key={data.id} data={data} containerDimensions={containerDimensions} bracketId={data.id} />;
                         default:

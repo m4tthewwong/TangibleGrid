@@ -72,9 +72,12 @@ const Textbox: React.FC<TextboxProps> = ({ data, isActive, setActiveTextboxId, c
         height: `${(((data.length + 1) / 16) * containerDimensions.height) - 20}px`,
         border: '3px double grey',
         textAlign: 'left',
-        backgroundColor: '#e0f7fa',
+        backgroundColor: '#FAF9F6',
         borderRadius: '10px',
         fontSize: '40px',
+        overflow: 'auto', // Enable scrolling when text overflows
+        wordWrap: 'break-word', // Ensure long words wrap correctly
+        whiteSpace: 'pre-wrap', // Preserve formatting and wrap text
     };
 
     return (
