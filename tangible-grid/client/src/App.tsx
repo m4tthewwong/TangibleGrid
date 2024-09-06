@@ -118,7 +118,12 @@ const App = () => {
                 speechText = `A ${bracket.type.toLowerCase()} bracket was added ${location} ${size}.`;
 
                 if (bracket.type === 'Text') {
-                    speechText += ` You can add up to ${bracket.width * bracket.length * 16} characters.`;
+                    let cleanContent = bracket.content.replace(/<\/?[^>]+(>|$)/g, ""); // Cleaned out the html elements out of the content
+                    const characterCount = cleanContent.length;
+                    speechText += characterCount > 0
+                        ? ` The content in the textbox is:     ${cleanContent}.`
+                        : ' There is no content in the textbox.';
+                    speechText += ` The textbox currently contains ${characterCount} characters out of a maximum of ${bracket.width * bracket.length * 16}.`;
                 }
                 
                 if (bracket.type === 'Image') {
@@ -444,6 +449,7 @@ const App = () => {
     // Listening for Keyboard Events
     useEffect(() => {
         const handleKeyPress = (event: KeyboardEvent) => {
+            console.log(event.key);
             // Check if Alt is pressed
             if (event.altKey && event.key >= '0' && event.key <= '9') {
                 // Handle Alt + number (focus specific textbox/imagebox/videobox)
