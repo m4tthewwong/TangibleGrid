@@ -1,6 +1,6 @@
 .App {
     text-align: center;
-    background-color: #F5F5DC;
+    background-color: #FAF9F6;
 }
 
 .App-logo {
@@ -15,7 +15,7 @@
 }
 
 .App-header {
-    background-color: #282c34;
+    background-color: #FAF9F6;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -45,6 +45,6 @@
     padding-bottom: 126.67%; /* Height is 16/12 = 1.3333 times the width (95%) */
     position: relative;
     margin: 0 auto;
-    border: 5px solid rgb(92, 92, 92);
+    border: 5px solid #FAF9F6;
     box-sizing: border-box;
 }

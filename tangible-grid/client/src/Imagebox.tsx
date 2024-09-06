@@ -113,13 +113,14 @@ const Imagebox: React.FC<ImageboxProps> = ({ data, containerDimensions, bracketI
         top: `${(((data.top_left_row) / 16) * containerDimensions.height) + 10}px`,
         width: `${(((data.width + 1) / 12) * containerDimensions.width) - 20}px`,
         height: `${(((data.length + 1) / 16) * containerDimensions.height) - 20}px`,
-        border: '3px solid grey',
+        border: '3px solid #FAF9F6',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
         overflow: 'hidden', // Ensure no overflow outside the box
         backgroundColor: '#FAF9F6',
         borderRadius: '10px',
+        outline: 'none',
     };
 
     const imageStyle: React.CSSProperties = {

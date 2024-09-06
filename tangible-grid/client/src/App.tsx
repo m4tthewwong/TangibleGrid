@@ -16,10 +16,11 @@
 // Verbalize AND repeat the empty number of rows and columns on the edges of the imagebox if bigger than one column or row and repeat image file name
 // Calculate recommended characters
 // Change normal text to 40, remove formatting from the title, default text needs to be 40px
+// "-" command should also state the number of textboxes, imageboxes, and videoboxes on the website
 
 /* ------------------------------------------------------------- Known Issues ------------------------------------------------------------- */
 /* -------------------- Priority -------------------- */
-// Error 404 with new arduino code - (HAPPENS WHEN CONFIRMING EMPTY TEXT BOX) - (TEMPORARILY FIXED BUT COULD CAUSE PROBLEMS - MAKE SURE TO TEST)
+// Toolbar record button doesn't speech record title/text properly
 /* -------------------- Slight priority -------------------- */
 // You have to click toolbar stuff twice for it to work except for alignment and microphone
 // If you click record, you have to click the textbox again
@@ -37,17 +38,13 @@
 // White space between brackets
 // Doesn't verbalize first bracket - NOTE: CLICK GOOGLE CHROME TO FOCUS IT
 // Speaks multiple times (major issue)
+// Speaks after text confirmation (had to do with not verbalizing first bracket)
 
 /* ------------------------------------------------------------- Things that need to be tested ------------------------------------------------------------- */
-// Modify empty textbox
-// Test if modifying a bracket will cause the bracket to be counted twice (one for add one for modify for the same bracket id) when pressing '-' on the keyboard
 
 /* ------------------------------------------------------------- New features to be added ------------------------------------------------------------- */
 /* -------------------- Priority -------------------- */
-// "-" command should also state the number of textboxes, imageboxes, and videoboxes on the website
-// Speaks after text confirmation?
 /* -------------------- Slight priority -------------------- */
-// Didn't bold with voice button on the toolbar
 // Add imagebox features to videobox?
 /* -------------------- Not a priority -------------------- */
 // Text overflowing - get rid of scroll bar
@@ -98,8 +95,8 @@ const App = () => {
 
         arduinoDataArray.forEach(data => {
             if (data.status === "Added" || data.status === "Modified") {
-                const boxWidth = containerDimensions.width * (data.width / 12);
-                const boxHeight = containerDimensions.height * (data.length / 16);
+                const boxWidth = containerDimensions.width * ((data.width + 1) / 12);
+                const boxHeight = containerDimensions.height * ((data.length + 1) / 16);
                 filledArea += boxWidth * boxHeight;
             }
         });
