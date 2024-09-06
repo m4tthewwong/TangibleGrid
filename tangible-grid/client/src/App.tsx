@@ -61,17 +61,17 @@ const App = () => {
     const isUserInitiatedRef = useRef(false); // Used to fix a bug where I get a random window confirmation after saving the text in a textbox
     const recognitionRef = useRef<typeof SpeechRecognition | null>(null); // Ref to keep track of recognition instance
     const [isTextboxFocused, setIsTextboxFocused] = useState(false); // Track textbox focus state
-    const [imageFileNames, setImageFileNames] = useState<{ [key: number]: string }>({});
+    //const [imageFileNames, setImageFileNames] = useState<{ [key: number]: string }>({});
 
     /* ------------------------------------------------------------- Functions ------------------------------------------------------------- */
 
     // Set the image file name in the state
-    const setImageFileName = (id: number, fileName: string) => {
+    /*const setImageFileName = (id: number, fileName: string) => {
         setImageFileNames((prev) => ({
             ...prev,
             [id]: fileName,
         }));
-    };
+    };*/
 
     // Function to calculate the percentage of empty space on the webpage
     const calculateEmptySpacePercentage = useCallback(() => {
@@ -106,11 +106,11 @@ const App = () => {
                 if (bracket.type === 'Text') {
                     speechText += ` You can add up to ${bracket.width * bracket.length * 16} characters.`;
                 }
-                if (bracket.type === 'Image') {
+                //if (bracket.type === 'Image') {
                     // Calculate empty rows/columns based on the image
-                    const imageElement = document.querySelector(`#file-input-${bracket.id}`);
+                    /*const imageElement = document.querySelector(`#file-input-${bracket.id}`);
                     const imageBox = document.querySelector(`[data-id="${bracket.id}"]`) as HTMLElement;
-            
+                    
                     if (imageElement && imageBox) {
                         const boxWidth = containerDimensions.width * (bracket.width / 12);
                         const boxHeight = containerDimensions.height * (bracket.length / 16);
@@ -147,7 +147,7 @@ const App = () => {
                                     speechText = 'The image fits in the box.';
                                 }
                             }
-            
+                            
                             // Add the image filename to the speech
                             const fileName = imageFileNames[bracket.id];
                             if (fileName) {
@@ -158,8 +158,8 @@ const App = () => {
                         } else {
                             speechText += ` The imagebox is empty.`;
                         }
-                    }
-                }
+                    }*/
+                //}
                 break;
             
             case 'Removed':
@@ -187,7 +187,7 @@ const App = () => {
         // Speak the constructed speech text
         console.log("Speech Text: ", speechText);
         speakText(speechText);
-    }, [containerDimensions, imageFileNames]);
+    }, [/*containerDimensions, imageFileNames*/]);
 
     // Updating content in the database with an API call
     const updateContentInDatabase = useCallback(async (id, content, retries = 5) => {
@@ -549,7 +549,7 @@ const App = () => {
                                 />
                             );
                         case 'Image':
-                            return <Imagebox key={data.id} data={data} containerDimensions={containerDimensions} bracketId={data.id} setImageFileName={setImageFileName} />;
+                            return <Imagebox key={data.id} data={data} containerDimensions={containerDimensions} bracketId={data.id} /*setImageFileName={setImageFileName}*/ />;
                         case 'Video':
                             return <Videobox key={data.id} data={data} containerDimensions={containerDimensions} bracketId={data.id} />;
                         default:
