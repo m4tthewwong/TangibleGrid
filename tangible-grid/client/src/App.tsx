@@ -21,9 +21,10 @@ import { ArduinoData } from './types'; // Type definitions
 // "alexa end" command to confirm text in textbox
 // alt + id# to focus textboxes, imageboxes, and videoboxes
 // make sure code ignores "touch"
-// 3) Verbalize AND repeat the empty number of rows and columns on the edges of the imagebox if bigger than one column or row and repeat image file name
-// 2) Calculate recommended characters
-// 1) Change normal text to 40, remove formatting from the title, default text needs to be 40px
+// Verbalize AND repeat the empty number of rows and columns on the edges of the imagebox if bigger than one column or row and repeat image file name
+// Calculate recommended characters
+// Change normal text to 40, remove formatting from the title, default text needs to be 40px
+// Doesn't verbalize first bracket - NOTE: CLICK GOOGLE CHROME TO FOCUS IT
 
 /* ------------------------------------------------------------- Known Issues ------------------------------------------------------------- */
 // NOT A PROBLEM - You must say "stop" before confirming the textbox, it will keep recording (ideal fix is when you confirm a textbox, it should stop all instances of speech recognition - attempted)
@@ -44,7 +45,6 @@ import { ArduinoData } from './types'; // Type definitions
 // See what happens if you add a textbox and remove the textbox, does it still record? (possible fix would be stopping all instances of speech recognition when removing a textbox)
 
 /* ------------------------------------------------------------- New features to be added ------------------------------------------------------------- */
-// 4) Doesn't verbalize first bracket
 // not a priority) Text overflowing - get rid of scroll bar
 // didn't bold with voice button on the toolbar
 // speaks multiple times
@@ -61,17 +61,17 @@ const App = () => {
     const isUserInitiatedRef = useRef(false); // Used to fix a bug where I get a random window confirmation after saving the text in a textbox
     const recognitionRef = useRef<typeof SpeechRecognition | null>(null); // Ref to keep track of recognition instance
     const [isTextboxFocused, setIsTextboxFocused] = useState(false); // Track textbox focus state
-    //const [imageFileNames, setImageFileNames] = useState<{ [key: number]: string }>({});
+    const [imageFileNames, setImageFileNames] = useState<{ [key: number]: string }>({});
 
     /* ------------------------------------------------------------- Functions ------------------------------------------------------------- */
 
     // Set the image file name in the state
-    /*const setImageFileName = (id: number, fileName: string) => {
+    const setImageFileName = (id: number, fileName: string) => {
         setImageFileNames((prev) => ({
             ...prev,
             [id]: fileName,
         }));
-    };*/
+    };
 
     // Function to calculate the percentage of empty space on the webpage
     const calculateEmptySpacePercentage = useCallback(() => {
@@ -106,9 +106,9 @@ const App = () => {
                 if (bracket.type === 'Text') {
                     speechText += ` You can add up to ${bracket.width * bracket.length * 16} characters.`;
                 }
-                //if (bracket.type === 'Image') {
+                if (bracket.type === 'Image') {
                     // Calculate empty rows/columns based on the image
-                    /*const imageElement = document.querySelector(`#file-input-${bracket.id}`);
+                    const imageElement = document.querySelector(`#file-input-${bracket.id}`);
                     const imageBox = document.querySelector(`[data-id="${bracket.id}"]`) as HTMLElement;
                     
                     if (imageElement && imageBox) {
@@ -158,8 +158,8 @@ const App = () => {
                         } else {
                             speechText += ` The imagebox is empty.`;
                         }
-                    }*/
-                //}
+                    }
+                }
                 break;
             
             case 'Removed':
@@ -549,7 +549,7 @@ const App = () => {
                                 />
                             );
                         case 'Image':
-                            return <Imagebox key={data.id} data={data} containerDimensions={containerDimensions} bracketId={data.id} /*setImageFileName={setImageFileName}*/ />;
+                            return <Imagebox key={data.id} data={data} containerDimensions={containerDimensions} bracketId={data.id} setImageFileName={setImageFileName} />;
                         case 'Video':
                             return <Videobox key={data.id} data={data} containerDimensions={containerDimensions} bracketId={data.id} />;
                         default:

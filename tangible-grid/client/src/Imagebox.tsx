@@ -15,10 +15,10 @@ interface ImageboxProps {
         height: number;
     };
     bracketId: number;
-    //setImageFileName: (id: number, fileName: string) => void;
+    setImageFileName: (id: number, fileName: string) => void;
 }
 
-const Imagebox: React.FC<ImageboxProps> = ({ data, containerDimensions, bracketId, /*setImageFileName*/ }) => {
+const Imagebox: React.FC<ImageboxProps> = ({ data, containerDimensions, bracketId, setImageFileName }) => {
 
     /* ------------------------------------------------------------- useStates and useRefs ------------------------------------------------------------- */
 
@@ -85,7 +85,7 @@ const Imagebox: React.FC<ImageboxProps> = ({ data, containerDimensions, bracketI
                 };
 
                 setImageSrc(e.target?.result as string);
-                //setImageFileName(data.id, file.name);
+                setImageFileName(data.id, file.name);
             };
             reader.readAsDataURL(file);
         }
