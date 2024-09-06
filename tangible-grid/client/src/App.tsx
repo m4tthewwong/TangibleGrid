@@ -63,6 +63,19 @@ const App = () => {
     const [isTextboxFocused, setIsTextboxFocused] = useState(false); // Track textbox focus state
     const [imageFileNames, setImageFileNames] = useState<{ [key: number]: string }>({});
 
+    // Refs to avoid adding state variables to dependencies
+    const containerDimensionsRef = useRef(containerDimensions);
+    const imageFileNamesRef = useRef(imageFileNames);
+
+    // Keep refs in sync with the actual state
+    useEffect(() => {
+        containerDimensionsRef.current = containerDimensions;
+    }, [containerDimensions]);
+
+    useEffect(() => {
+        imageFileNamesRef.current = imageFileNames;
+    }, [imageFileNames]);
+
     /* ------------------------------------------------------------- Functions ------------------------------------------------------------- */
 
     // Set the image file name in the state
@@ -112,10 +125,10 @@ const App = () => {
                     const imageBox = document.querySelector(`[data-id="${bracket.id}"]`) as HTMLElement;
                     
                     if (imageElement && imageBox) {
-                        const boxWidth = containerDimensions.width * (bracket.width / 12);
-                        const boxHeight = containerDimensions.height * (bracket.length / 16);
-                        const columnWidth = containerDimensions.width / 12;
-                        const rowHeight = containerDimensions.height / 16;
+                        const boxWidth = containerDimensionsRef.current.width * (bracket.width / 12);
+                        const boxHeight = containerDimensionsRef.current.height * (bracket.length / 16);
+                        const columnWidth = containerDimensionsRef.current.width / 12;
+                        const rowHeight = containerDimensionsRef.current.height / 16;
                         
                         if (imageBox.querySelector('img')) {
                             const img = imageBox.querySelector('img') as HTMLImageElement;
@@ -129,27 +142,27 @@ const App = () => {
                                 const emptyRows = emptyHeight / rowHeight;
                                 const fullRows = Math.floor(emptyRows / 2);
                                 if (fullRows > 1) {
-                                    speechText = `There are ${fullRows} empty rows each on the top and bottom.`;
+                                    speechText += ` There are ${fullRows} empty rows each on the top and bottom.`;
                                 } else if (fullRows === 1) {
-                                    speechText = `There is ${fullRows} empty row each on the top and bottom.`;
+                                    speechText += ` There is ${fullRows} empty row each on the top and bottom.`;
                                 } else {
-                                    speechText = 'The image fits in the box.';
+                                    speechText += ' The image fits in the box.';
                                 }
                             } else {
                                 const emptyWidth = boxWidth - (boxHeight * imageAspectRatio);
                                 const emptyColumns = emptyWidth / columnWidth;
                                 const fullColumns = Math.floor(emptyColumns / 2);
                                 if (fullColumns > 1) {
-                                    speechText = `There are ${fullColumns} empty columns each on the left and right.`;
+                                    speechText += ` There are ${fullColumns} empty columns each on the left and right.`;
                                 } else if (fullColumns === 1) {
-                                    speechText = `There is ${fullColumns} empty column each on the left and right.`;
+                                    speechText += ` There is ${fullColumns} empty column each on the left and right.`;
                                 } else {
-                                    speechText = 'The image fits in the box.';
+                                    speechText += ' The image fits in the box.';
                                 }
                             }
                             
                             // Add the image filename to the speech
-                            const fileName = imageFileNames[bracket.id];
+                            const fileName = imageFileNamesRef.current[bracket.id];
                             if (fileName) {
                                 speechText += ` The image file name is ${fileName}.`;
                             }
