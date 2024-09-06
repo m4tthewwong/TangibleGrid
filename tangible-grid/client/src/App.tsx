@@ -1,11 +1,3 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import './App.css';
-import Textbox from './Textbox.tsx';
-import Imagebox from './Imagebox.tsx';
-import Videobox from './Videobox.tsx';
-import Toolbar from './Toolbar.tsx';
-import { ArduinoData } from './types'; // Type definitions
-
 /* ------------------------------------------------------------- Recently Added Features ------------------------------------------------------------- */
 // ALL BRACKETS
 // If bracket added, say status, type, location, and size
@@ -24,15 +16,18 @@ import { ArduinoData } from './types'; // Type definitions
 // Verbalize AND repeat the empty number of rows and columns on the edges of the imagebox if bigger than one column or row and repeat image file name
 // Calculate recommended characters
 // Change normal text to 40, remove formatting from the title, default text needs to be 40px
-// Doesn't verbalize first bracket - NOTE: CLICK GOOGLE CHROME TO FOCUS IT
 
 /* ------------------------------------------------------------- Known Issues ------------------------------------------------------------- */
-// NOT A PROBLEM - You must say "stop" before confirming the textbox, it will keep recording (ideal fix is when you confirm a textbox, it should stop all instances of speech recognition - attempted)
-// Error 404 with new arduino code - (old code - COULD POSSIBLY HAPPEN WHEN CONFIRMING EMPTY TEXT BOX) (new code - COULD POSSIBLY HAPPEN WHEN CONFIRMING ANY TEXT BOX)
-// while speech recognition is running, the speech synthesis doesn't get run (ideal fix for this would be to not run the speech recognition until the speech synthesis has finished running)
-// When you add a textbox (one instance of speech recognition) and user clicks record (another instance) (or perhaps if you click record twice), you get an error (probably not a big idea - can be fixed by disabling record button while speech recognition is active)
+/* -------------------- Priority -------------------- */
+// Error 404 with new arduino code - (HAPPENS WHEN CONFIRMING EMPTY TEXT BOX) - (TEMPORARILY FIXED BUT COULD CAUSE PROBLEMS - MAKE SURE TO TEST)
+/* -------------------- Slight priority -------------------- */
 // You have to click toolbar stuff twice for it to work except for alignment and microphone
-// if you click record, you have to click the textbox again
+// If you click record, you have to click the textbox again
+/* -------------------- Not a priority -------------------- */
+// NOT A PROBLEM - You must say "stop" before confirming the textbox, it will keep recording (ideal fix is when you confirm a textbox, it should stop all instances of speech recognition - attempted)
+// When you add a textbox (one instance of speech recognition) and user clicks record (another instance), you get an error (ideal fix is disabling record button while speech recognition is active)
+// If you add a textbox and then remove it without stopping alexa, it still records the user's voice (ideal fix would be stopping all instances of speech recognition when removing a textbox)
+// Speech recognition is recording the speech synthesis but isn't causing any problems at all (ideal fix is stopping speech recognition until speech synthesis is done)
 
 // alexa stop doesn't confirm (don't use alexa end)
 
@@ -40,15 +35,32 @@ import { ArduinoData } from './types'; // Type definitions
 // If you don't speak for a couple of seconds, speech recognition will end
 // "title" text doesn't get bolded or increased in font size
 // White space between brackets
+// Doesn't verbalize first bracket - NOTE: CLICK GOOGLE CHROME TO FOCUS IT
+// Speaks multiple times (major issue)
 
 /* ------------------------------------------------------------- Things that need to be tested ------------------------------------------------------------- */
-// See what happens if you add a textbox and remove the textbox, does it still record? (possible fix would be stopping all instances of speech recognition when removing a textbox)
+// Modify empty textbox
+// Test if modifying a bracket will cause the bracket to be counted twice (one for add one for modify for the same bracket id) when pressing '-' on the keyboard
 
 /* ------------------------------------------------------------- New features to be added ------------------------------------------------------------- */
-// not a priority) Text overflowing - get rid of scroll bar
-// didn't bold with voice button on the toolbar
-// speaks multiple times
-// speaks after text confirmation?
+/* -------------------- Priority -------------------- */
+// "-" command should also state the number of textboxes, imageboxes, and videoboxes on the website
+// Speaks after text confirmation?
+/* -------------------- Slight priority -------------------- */
+// Didn't bold with voice button on the toolbar
+// Add imagebox features to videobox?
+/* -------------------- Not a priority -------------------- */
+// Text overflowing - get rid of scroll bar
+
+/* ------------------------------------------------------------- Beginning of Code ------------------------------------------------------------- */
+
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import './App.css';
+import Textbox from './Textbox.tsx';
+import Imagebox from './Imagebox.tsx';
+import Videobox from './Videobox.tsx';
+import Toolbar from './Toolbar.tsx';
+import { ArduinoData } from './types'; // Type definitions
 
 const App = () => {
     /* ------------------------------------------------------------- useStates and useRefs ------------------------------------------------------------- */
@@ -66,15 +78,6 @@ const App = () => {
     // Refs to avoid adding state variables to dependencies
     const containerDimensionsRef = useRef(containerDimensions);
     const imageFileNamesRef = useRef(imageFileNames);
-
-    // Keep refs in sync with the actual state
-    useEffect(() => {
-        containerDimensionsRef.current = containerDimensions;
-    }, [containerDimensions]);
-
-    useEffect(() => {
-        imageFileNamesRef.current = imageFileNames;
-    }, [imageFileNames]);
 
     /* ------------------------------------------------------------- Functions ------------------------------------------------------------- */
 
@@ -116,9 +119,11 @@ const App = () => {
         switch (bracket.status) {
             case 'Added':
                 speechText = `A ${bracket.type.toLowerCase()} bracket was added ${location} ${size}.`;
+
                 if (bracket.type === 'Text') {
                     speechText += ` You can add up to ${bracket.width * bracket.length * 16} characters.`;
                 }
+                
                 if (bracket.type === 'Image') {
                     // Calculate empty rows/columns based on the image
                     const imageElement = document.querySelector(`#file-input-${bracket.id}`);
@@ -184,11 +189,9 @@ const App = () => {
                 if (bracket.type === 'Text') {
                     let cleanContent = bracket.content.replace(/<\/?[^>]+(>|$)/g, ""); // Cleaned out the html elements out of the content
                     const characterCount = cleanContent.length;
-                    if (characterCount > 0) {
-                        speechText += ` The content in the textbox currently is   ${cleanContent}.`;
-                    } else {
-                        speechText += ` There is no content in the textbox.`;
-                    }
+                    speechText += characterCount > 0
+                        ? ` The content in the textbox is:     ${cleanContent}.`
+                        : ' There is no content in the textbox.';
                     speechText += ` The textbox currently contains ${characterCount} characters out of a maximum of ${bracket.width * bracket.length * 16}.`;
                 }
                 break;
@@ -200,7 +203,7 @@ const App = () => {
         // Speak the constructed speech text
         console.log("Speech Text: ", speechText);
         speakText(speechText);
-    }, [/*containerDimensions, imageFileNames*/]);
+    }, []);
 
     // Updating content in the database with an API call
     const updateContentInDatabase = useCallback(async (id, content, retries = 5) => {
@@ -246,7 +249,7 @@ const App = () => {
             recognitionRef.current.lang = 'en-US';
             recognitionRef.current.interimResults = false;
             recognitionRef.current.maxAlternatives = 1;
-            recognitionRef.current.continuous = true;  // Set to continuous listening mode
+            recognitionRef.current.continuous = true;  // Set to continuous listening mode - can't tell if this works
         }
     
         const recognition = recognitionRef.current;
@@ -484,10 +487,20 @@ const App = () => {
             // Handle "-" key press to announce the empty space percentage
             if (!event.altKey && event.key === '-') {
                 const emptySpacePercentage = calculateEmptySpacePercentage();
-                const speechText = `The webpage is ${emptySpacePercentage.toFixed(2)} percent empty.`;
+            
+                // Count the number of each type of bracket
+                const textBoxCount = arduinoDataArray.filter(data => data.type === 'Text' && (data.status === "Added" || data.status === "Modified")).length;
+                const imageBoxCount = arduinoDataArray.filter(data => data.type === 'Image' && (data.status === "Added" || data.status === "Modified")).length;
+                const videoBoxCount = arduinoDataArray.filter(data => data.type === 'Video' && (data.status === "Added" || data.status === "Modified")).length;
+            
+                const speechText = `The webpage is ${emptySpacePercentage.toFixed(2)} percent empty. ` +
+                                   `There ${textBoxCount === 1 ? 'is' : 'are'} ${textBoxCount} ${textBoxCount === 1 ? 'textbox' : 'textboxes'}, ` +
+                                   `${imageBoxCount === 1 ? 'is' : 'are'} ${imageBoxCount} ${imageBoxCount === 1 ? 'imagebox' : 'imageboxes'}, ` +
+                                   `and ${videoBoxCount === 1 ? 'is' : 'are'} ${videoBoxCount} ${videoBoxCount === 1 ? 'videobox' : 'videoboxes'}.`;
+            
                 console.log("User pressed '-' button: ", speechText);
                 speakText(speechText);
-            }
+            }            
         };
 
         window.addEventListener('keydown', handleKeyPress);
@@ -540,7 +553,16 @@ const App = () => {
         };
 
         fetchChanges();
-    }, [arduinoChanges, handleDatabaseChange]);    
+    }, [arduinoChanges, handleDatabaseChange]);
+    
+    // Keep refs in sync with the actual state
+    useEffect(() => {
+        containerDimensionsRef.current = containerDimensions;
+    }, [containerDimensions]);
+
+    useEffect(() => {
+        imageFileNamesRef.current = imageFileNames;
+    }, [imageFileNames]);
 
     return (
         <div className="App">

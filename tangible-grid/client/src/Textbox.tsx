@@ -38,13 +38,23 @@ const Textbox: React.FC<TextboxProps> = ({ data, isActive, setActiveTextboxId, c
     };
 
     // Intended to trigger an action when the Textbox loses focus
-    const handleBlur = () => {
+    /*const handleBlur = () => {
         // Check if textboxRef.current is not null and update the content
         if (textboxRef.current) {
             updateContent(data.id.toString(), textboxRef.current.innerHTML);
         }
         onBlur();
-    };
+    };*/
+    // Temporary fix to error 404 when content is empty but could affect modifying this textbox
+    const handleBlur = () => {
+        if (textboxRef.current) {
+            const content = textboxRef.current.innerHTML.trim();
+            if (content !== "") {
+                updateContent(data.id.toString(), content);
+            }
+        }
+        onBlur();
+     }; 
 
     /* ------------------------------------------------------------- useEffects ------------------------------------------------------------- */
 
