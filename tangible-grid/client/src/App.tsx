@@ -47,7 +47,7 @@
 /* -------------------- Slight priority -------------------- */
 // Add imagebox features to videobox?
 /* -------------------- Not a priority -------------------- */
-// Text overflowing - get rid of scroll bar
+// Text overflowing - get rid of scroll bar (problem with getting rid of this is that the text can overflow past the textbox, extending it)
 
 /* ------------------------------------------------------------- Beginning of Code ------------------------------------------------------------- */
 
@@ -123,7 +123,7 @@ const App = () => {
                     speechText += characterCount > 0
                         ? ` The content in the textbox is:     ${cleanContent}.`
                         : ' There is no content in the textbox.';
-                    speechText += ` The textbox currently contains ${characterCount} characters out of a maximum of ${bracket.width * bracket.length * 16}.`;
+                    speechText += ` The textbox currently contains ${characterCount} characters out of a maximum of ${bracket.width * bracket.length * 16}. The recommended number of characters in this box is ${((bracket.length-1) * bracket.width * 16) + 1}`;
                 }
                 
                 if (bracket.type === 'Image') {
@@ -194,7 +194,7 @@ const App = () => {
                     speechText += characterCount > 0
                         ? ` The content in the textbox is:     ${cleanContent}.`
                         : ' There is no content in the textbox.';
-                    speechText += ` The textbox currently contains ${characterCount} characters out of a maximum of ${bracket.width * bracket.length * 16}.`;
+                    speechText += ` The textbox currently contains ${characterCount} characters out of a maximum of ${bracket.width * bracket.length * 16}. The recommended number of characters in this box is ${((bracket.length-1) * bracket.width * 16) + 1}`;
                 }
                 break;
             
