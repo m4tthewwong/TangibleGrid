@@ -1,7 +1,11 @@
-import React from 'react';
+import React, { useRef, useCallback } from 'react';
 import './Toolbar.css';
 
 const Toolbar: React.FC<{ activeTextboxId: number | null }> = ({ activeTextboxId }) => {
+
+    /* ------------------------------------------------------------- useStates and useRefs ------------------------------------------------------------- */
+
+    const recognitionRef = useRef<typeof SpeechRecognition | null>(null); // Ref to keep track of recognition instance
 
     /* ------------------------------------------------------------- Functions ------------------------------------------------------------- */
 
@@ -10,29 +14,136 @@ const Toolbar: React.FC<{ activeTextboxId: number | null }> = ({ activeTextboxId
         document.execCommand(command, false, value);
     };
 
-    // Function to activate voice recognition using the record button on the toolbar
-    const startRecording = () => {
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-
-        recognition.lang = 'en-US';
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
-
-        recognition.start();
-
-        recognition.onresult = (event) => {
-            const speechToText = event.results[0][0].transcript;
-            const focusedElement = document.activeElement;
-
-            if (focusedElement && focusedElement.tagName === 'DIV' && focusedElement.getAttribute('contenteditable')) {
-                document.execCommand('insertText', false, speechToText);
+    const startSpeechRecognition = useCallback(() => {
+        if (!recognitionRef.current) {
+            recognitionRef.current = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognitionRef.current.lang = 'en-US';
+            recognitionRef.current.interimResults = false;
+            recognitionRef.current.maxAlternatives = 1;
+            recognitionRef.current.continuous = true;  // Set to continuous listening mode - can't tell if this works
+        }
+    
+        const recognition = recognitionRef.current;
+    
+        let stopRecognition = false;
+    
+        recognition.onstart = () => {
+            console.log("Speech recognition started.");
+        };
+    
+        recognition.onend = () => {
+            console.log("Speech recognition ended.");
+            if (!stopRecognition) {
+                recognition.start();  // Automatically restart recognition if it ends unexpectedly (ex. not talking)
             }
         };
+    
+        recognition.onresult = (event) => {
+            let speechToText = event.results[event.resultIndex][0].transcript.toLowerCase().trim();
+            console.log("Recognized Speech:", speechToText);
 
-        recognition.onerror = (event) => {
-            console.error('Speech recognition error', event.error);
+            if (speechToText.includes('alexa end')) {
+                if (activeTextboxId !== null) {
+                    const activeTextbox = document.querySelector(`[data-id="${activeTextboxId}"]`);
+                    if (activeTextbox) {
+                        (activeTextbox as HTMLElement).blur();
+                        console.log(`Textbox with id ${activeTextboxId} confirmed.`);
+                    }
+                }
+            }
+    
+            if (speechToText.includes('alexa stop')) {
+                if (activeTextboxId !== null) {
+                    const activeTextbox = document.querySelector(`[data-id="${activeTextboxId}"]`);
+                    if (activeTextbox) {
+                        (activeTextbox as HTMLElement).blur();
+                        console.log(`Textbox with id ${activeTextboxId} confirmed.`);
+                    }
+                }
+
+                stopRecognition = true;  // Set the flag to prevent restarting
+                recognition.stop();
+                console.log("Stopping recognition: ", speechToText);
+                return;
+            }
+    
+            if (speechToText.startsWith('alexa title')) {
+                speechToText = speechToText.replace('alexa title', '').trim(); // Remove the command part and keep the rest as the title
+                if (speechToText) {
+                    const focusedElement = document.activeElement;
+                    if (focusedElement && focusedElement.tagName === 'DIV' && focusedElement.getAttribute('contenteditable')) {
+                        // Creating a span with the desired styles and inserting it (since execCommand decided to not work)
+                        const span = document.createElement('span');
+                        span.style.fontSize = '80px';
+                        span.style.fontWeight = 'bold';
+                        span.textContent = speechToText;
+                    
+                        const selection = window.getSelection();
+                        if (selection && selection.rangeCount > 0) {
+                            const range = selection.getRangeAt(0);
+                            range.deleteContents();
+                            range.insertNode(span);
+                        
+                            // Move the cursor after the span
+                            range.setStartAfter(span);
+                            range.setEndAfter(span);
+
+                            // Insert the new line after the title text
+                            const br = document.createElement('br');
+                            range.insertNode(br);
+                        
+                            // Adjust the selection range to be after the <br> element
+                            range.setStartAfter(br);
+                            range.setEndAfter(br);
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                        }
+                    }
+                }
+            } 
+
+            if (speechToText.startsWith('alexa')) {
+                speechToText = speechToText.replace('alexa', '').trim(); // Remove the command part and keep the rest as the title
+                if (speechToText) {
+                    const focusedElement = document.activeElement;
+                    if (focusedElement && focusedElement.tagName === 'DIV' && focusedElement.getAttribute('contenteditable')) {
+                        // Creating a span with the desired styles and inserting it (since execCommand decided to not work)
+                        const span = document.createElement('span');
+                        span.style.fontSize = '40px';
+                        span.style.fontWeight = 'normal';
+                        span.textContent = speechToText;
+                        
+                        const selection = window.getSelection();
+                        if (selection && selection.rangeCount > 0) {
+                            const range = selection.getRangeAt(0);
+                            range.deleteContents();
+                            range.insertNode(span);
+                            
+                            // Move the cursor after the span
+                            range.setStartAfter(span);
+                            range.setEndAfter(span);
+                            
+                            // Insert the new line after the title text
+                            const br = document.createElement('br');
+                            range.insertNode(br);
+                            
+                            // Adjust the selection range to be after the <br> element
+                            range.setStartAfter(br);
+                            range.setEndAfter(br);
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                        }
+                    }
+                }
+            }            
         };
-    };
+    
+        recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+        };
+    
+        recognition.start(); // Start the initial recognition
+    }, [activeTextboxId]);
 
     return (
         <div id="toolbar" className="toolbar" style={{ marginBottom: '20px' }}>
@@ -87,7 +198,7 @@ const Toolbar: React.FC<{ activeTextboxId: number | null }> = ({ activeTextboxId
                 <option value="Lucida Console">Lucida Console</option>
                 <option value="Tahoma">Tahoma</option>
             </select>
-            <button className="toolbar-button" onClick={startRecording}>🎙️ Record</button>
+            <button className="toolbar-button" onClick={startSpeechRecognition}>🎙️ Record</button>
             {/* Add more buttons as needed */}
         </div>
     );
