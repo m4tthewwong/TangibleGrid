@@ -11,6 +11,7 @@ app.use(cors());
 const port = 3001;
 
 const serialPort = new SerialPort({ path: "COM3", baudRate: 9600 });
+// const serialPort = new SerialPort({ path: "/dev/tty.usbserial-0001", baudRate: 9600 });
 const parser = new ReadlineParser();
 serialPort.pipe(parser);
 
