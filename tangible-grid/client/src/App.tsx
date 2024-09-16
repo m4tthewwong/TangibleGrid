@@ -24,6 +24,7 @@
 /* -------------------- Slight priority -------------------- */
 // You have to click toolbar stuff twice for it to work except for alignment and microphone
 // If you click record, you have to click the textbox again
+// "alexa next line" command doesn't work after text that has been typed with the keyboard (only works after text spoken from the speech recognition)
 /* -------------------- Not a priority -------------------- */
 // NOT A PROBLEM - You must say "stop" before confirming the textbox, it will keep recording (ideal fix is when you confirm a textbox, it should stop all instances of speech recognition - attempted)
 // When you add a textbox (one instance of speech recognition) and user clicks record (another instance), you get an error (ideal fix is disabling record button while speech recognition is active)
@@ -272,7 +273,7 @@ const App = () => {
             let speechToText = event.results[event.resultIndex][0].transcript.toLowerCase().trim();
             console.log("Recognized Speech:", speechToText);
 
-            if (speechToText.includes('alexa end')) {
+            /* if (speechToText.includes('alexa end')) {
                 if (activeTextboxId !== null) {
                     const activeTextbox = document.querySelector(`[data-id="${activeTextboxId}"]`);
                     if (activeTextbox) {
@@ -280,7 +281,7 @@ const App = () => {
                         console.log(`Textbox with id ${activeTextboxId} confirmed.`);
                     }
                 }
-            }
+            } */
     
             if (speechToText.includes('alexa stop')) {
                 if (activeTextboxId !== null) {
@@ -295,6 +296,28 @@ const App = () => {
                 recognition.stop();
                 console.log("Stopping recognition: ", speechToText);
                 return;
+            }
+
+            if (speechToText.startsWith('alexa next line')) {
+                const focusedElement = document.activeElement;
+                if (focusedElement && focusedElement.tagName === 'DIV' && focusedElement.getAttribute('contenteditable')) {
+                    const selection = window.getSelection();
+                    if (selection && selection.rangeCount > 0) {
+                        const range = selection.getRangeAt(0);
+        
+                        // Insert a <br> element to create a new line
+                        const br = document.createElement('br');
+                        range.insertNode(br);
+        
+                        // Move the cursor after the <br>
+                        range.setStartAfter(br);
+                        range.setEndAfter(br);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+        
+                        console.log('Moved to the next line.');
+                    }
+                }
             }
     
             if (speechToText.startsWith('alexa title')) {
@@ -332,8 +355,8 @@ const App = () => {
                 }
             } 
 
-            if (speechToText.startsWith('alexa')) {
-                speechToText = speechToText.replace('alexa', '').trim(); // Remove the command part and keep the rest as the title
+            if (speechToText.startsWith('alexa text')) {
+                speechToText = speechToText.replace('alexa text', '').trim(); // Remove the command part and keep the rest as the title
                 if (speechToText) {
                     const focusedElement = document.activeElement;
                     if (focusedElement && focusedElement.tagName === 'DIV' && focusedElement.getAttribute('contenteditable')) {
@@ -448,7 +471,7 @@ const App = () => {
     // Listening for Keyboard Events
     useEffect(() => {
         const handleKeyPress = (event: KeyboardEvent) => {
-            console.log(event.key);
+            console.log("Key Pressed: ", event.key);
             // Check if Alt is pressed
             if (event.altKey && event.key >= '0' && event.key <= '9') {
                 // Handle Alt + number (focus specific textbox/imagebox/videobox)
