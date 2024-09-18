@@ -319,8 +319,40 @@ const App = () => {
                     }
                 }
             }
-    
-            if (speechToText.startsWith('alexa title')) {
+            if (speechToText.startsWith('alexa title input one') || speechToText.startsWith('alexa title input 1')) {
+                speechToText = 'Welcome to my lovely hometown island!';
+                if (speechToText) {
+                    const focusedElement = document.activeElement;
+                    if (focusedElement && focusedElement.tagName === 'DIV' && focusedElement.getAttribute('contenteditable')) {
+                        // Creating a span with the desired styles and inserting it (since execCommand decided to not work)
+                        const span = document.createElement('span');
+                        span.style.fontSize = '40px';
+                        span.style.fontWeight = 'bold';
+                        span.textContent = speechToText;
+                    
+                        const selection = window.getSelection();
+                        if (selection && selection.rangeCount > 0) {
+                            const range = selection.getRangeAt(0);
+                            range.deleteContents();
+                            range.insertNode(span);
+                        
+                            // Move the cursor after the span
+                            range.setStartAfter(span);
+                            range.setEndAfter(span);
+
+                            // Insert the new line after the title text
+                            const br = document.createElement('br');
+                            range.insertNode(br);
+                        
+                            // Adjust the selection range to be after the <br> element
+                            range.setStartAfter(br);
+                            range.setEndAfter(br);
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                        }
+                    }
+                }
+            } else if (speechToText.startsWith('alexa title')) {
                 speechToText = speechToText.replace('alexa title', '').trim(); // Remove the command part and keep the rest as the title
                 if (speechToText) {
                     const focusedElement = document.activeElement;
@@ -362,7 +394,7 @@ const App = () => {
                     if (focusedElement && focusedElement.tagName === 'DIV' && focusedElement.getAttribute('contenteditable')) {
                         // Creating a span with the desired styles and inserting it (since execCommand decided to not work)
                         const span = document.createElement('span');
-                        span.style.fontSize = '40px';
+                        span.style.fontSize = '20px';
                         span.style.fontWeight = 'normal';
                         span.textContent = speechToText;
                         

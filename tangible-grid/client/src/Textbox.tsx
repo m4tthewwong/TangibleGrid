@@ -84,7 +84,7 @@ const Textbox: React.FC<TextboxProps> = ({ data, isActive, setActiveTextboxId, c
         textAlign: 'left',
         backgroundColor: '#FAF9F6',
         borderRadius: '10px',
-        fontSize: '40px',
+        fontSize: '30px',
         overflow: 'auto', // Enable scrolling when text overflows
         wordWrap: 'break-word', // Ensure long words wrap correctly
         whiteSpace: 'pre-wrap', // Preserve formatting and wrap text
