@@ -3,7 +3,7 @@ const byte COLS = 12;
 const byte NUM_BRACKETS = 9;
 
 
-const int c0 =  A0;
+const int c0 =  A12;  // A0 is for UART, so it's not stable for analog read.
 const int c1 =  A1;
 const int c2 =  A2;
 const int c3 =  A3; 
@@ -43,11 +43,10 @@ float matrix_array_curr[ROWS][COLS];
 float matrix_array_prev[ROWS][COLS];
 float matrix_array_updated[ROWS][COLS];
 
-int ranges[NUM_BRACKETS + 1] = { 450, 550, 650, 750, 850, 950, 1050, 1150, 1250, 1350 };
-                                //  500, 600, 700, 800, 900, 1000, 1100, 1200, 1300
+int ranges[NUM_BRACKETS + 1] = { 300, 400, 500, 600, 700, 800, 900, 1000, 1250, 1350 };
+                                //  390, 490, 590, 690, 790, 890, 990, 1190, 1300
 String bracket_types[3] = { "Text", "Image", "Video" };
 String current_json;
-
 
 // Data type defining elemements important to a bracket
 struct bracket {
@@ -78,6 +77,7 @@ void init_brackets_array(){
     bracket_map[i].length = -1;
     bracket_map[i].width = -1;
     bracket_map[i].status = "None";
+    bracket_map[i].touch = false;
   }
 }
 
@@ -112,5 +112,3 @@ void init_pin_mode(){
 }
 
 // ======= Initial Section =======
-
-

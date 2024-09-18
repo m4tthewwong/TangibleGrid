@@ -110,7 +110,7 @@ const App = () => {
         let speechText = '';
 
         // General bracket information
-        const location = `at row ${bracket.top_left_row} and column ${bracket.top_left_col}`;
+        const location = `at row ${bracket.top_left_row + 1} and column ${bracket.top_left_col + 1}`;
         const size = `with a width of ${bracket.width} and height of ${bracket.length}`;
 
         switch (bracket.status) {

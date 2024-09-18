@@ -1,33 +1,31 @@
 #include <ArduinoJson.h>
 #include "tangibleSite.h"
+#include "i2cBus.h"
 
 
 void setup() {
+  Serial.begin(9600);
+  delay(100);
+  Wire.begin();
   // put your setup code here, to run once:
   init_brackets_array();
   init_matrix_updated();
   init_matrix_prev();
   init_matrix_curr();
   init_pin_mode();
-  Serial.begin(9600);
+  init_brackets_array();
+  //init_touch_sensor();
+  
+
 }
 
 /*
 void loop() {
-  show_matrix_prev();
   scanning();
-  show_matrix_curr();
+  //touch_scan_1_8();
   detect();
   delay(1000);
-}
-*/
-
-
-void resetdigitalPins() {
-  for (int i = 0; i < ROWS; i++) {
-    digitalWrite(rowPins[i], LOW);
-  }
-}
+}*/
 
 
 void scanning() {
@@ -53,20 +51,29 @@ void scanning() {
     resetdigitalPins();  //Reset GPIO, TURN OFF
     delay(50);
   }
+  // show_matrix_updated();
+  clean_ghost_value();
+  // show_matrix_updated();
 }
 
+
+void clean_ghost_value() {
+  for (int i = 0; i < ROWS; i++) {
+    for (int n = 0; n < COLS; n++) {
+      if (matrix_array_updated[i][n] < 300) {  // change here to avoid ghost value
+        matrix_array_updated[i][n] = 0;
+      }
+    }
+  }
+}
 
 
 void detect() {
   // Checking if the new matrix has any qualified changes compared to the current matrix
-  if (check_nonzero_count() % 4 == 0 && are_different()) {
+  if (are_different() && check_nonzero_count() % 4 == 0) {
     // Setting previous matrix state to the new one
-    clean_ghost_value();
-    memcpy(matrix_array_prev, matrix_array_curr, sizeof(matrix_array_curr));
+    memcpy(matrix_array_prev, matrix_array_curr, sizeof(matrix_array_curr));  // memcpy  used for copying the 2nd parameter into 1st parameter
     memcpy(matrix_array_curr, matrix_array_updated, sizeof(matrix_array_updated));
-
-    // memcpy  used for copying the 2nd parameter into 1st parameter
-    // should have one function to clean the ghost value to zero so that it won't pollute the current real baseboard martix
 
     // Find new rectangle change
     find_rect();
@@ -80,23 +87,12 @@ void detect() {
   }
 }
 
-
-void clean_ghost_value() {
-  for (int i = 0; i < ROWS; i++) {
-    for (int n = 0; n < COLS; n++) {
-      if (matrix_array_updated[i][n] < 450) {  // change here to avoid ghost value
-        matrix_array_updated[i][n] = 0;
-      }
-    }
-  }
-}
-
 // Check if the new matrix has changed with any nonzero resistance values
 int check_nonzero_count() {
   int count = 0;
   for (int i = 0; i < ROWS; i++) {
     for (int n = 0; n < COLS; n++) {
-      if (matrix_array_updated[i][n] > 100) {  // change here to avoid ghost value
+      if (matrix_array_updated[i][n] >= 300) {  // change here to avoid ghost value
         count += 1;
       }
     }
@@ -108,14 +104,14 @@ int check_nonzero_count() {
 bool are_different() {
   for (int i = 0; i < ROWS; i++) {
     for (int n = 0; n < COLS; n++) {
-      if (matrix_array_updated[i][n] - matrix_array_curr[i][n] != 0) {
+      if (abs(matrix_array_updated[i][n] - matrix_array_curr[i][n]) > 300) {  // Use abs value of difference to create a filter that aims to debounce the differences of analogRead values.
         return true;
       }
     }
   }
-
   return false;
 }
+
 
 
 // Findes the changed bracket and updates the current bracket variable
@@ -125,17 +121,17 @@ void find_rect() {
   int index = 0;
 
   for (int i = 0; i < ROWS; i++) {
-    if (index == 6) {
-      break;
-    }
     for (int n = 0; n < COLS; n++) {
       int diff = matrix_array_curr[i][n] - matrix_array_prev[i][n];
-      if (diff > 100 && index < 6) {  // change it to ignore the ghost value
+      if ((abs(diff) > 300) && (index < 6)) {
         points[index] = i;
         points[index + 1] = n;
         index += 2;
         diff_value = diff;
       }
+    }
+    if (index == 6) {
+      break;
     }
   }
 
@@ -150,23 +146,16 @@ void find_rect() {
     for (int i = 0; i < NUM_BRACKETS + 1; i++) {
       if (in_range(curr_bracket.resistance, ranges[i], ranges[i + 1])) {
         curr_bracket.id = i;
-        if (i >= 0 && i < 4) {
-          curr_bracket.type = bracket_types[0];  // 0, 1, 2, 3 will be text bracket
-        } else if (i > 3 && i < 7) {
-          curr_bracket.type = bracket_types[1];  // 4, 5, 6 will be image
+        if (i >= 0 && i < 3) {
+          curr_bracket.type = bracket_types[0];  // 0, 1, 2 will be text bracket
+        } else if (i > 2 && i < 6) {
+          curr_bracket.type = bracket_types[1];  // 3, 4, 5 will be image
         } else {
-          curr_bracket.type = bracket_types[2];  // 7, 9, ....all will be video
+          curr_bracket.type = bracket_types[2];  // 6, 7, 8, ....all will be video
         }
-        //curr_bracket.type = bracket_types[i / 3];
-        // 0, 1, 2 will be text bracket
-        // 3, 4, 5 will be image
-        // 6, 7, 8 will be video
-        // 9, 10, 11 will be text again
         break;
       }
     }
-
-    curr_bracket.touch = (curr_bracket.type == "Text");  // Set touch to true for text brackets (test simulation)
 
     if (sign > 0 && bracket_map[curr_bracket.id].id == -1) {
       curr_bracket.status = "Added";
@@ -214,7 +203,7 @@ String update_json() {
   block["length"] = curr_bracket.length;
   block["width"] = curr_bracket.width;
   block["status"] = curr_bracket.status;
-  block["touch"] = curr_bracket.touch;
+  // block["touch"] = curr_bracket.touch;
   block["content"] = "";
 
   String output;
@@ -228,10 +217,37 @@ String update_json() {
 
 
 
+// Basical funcation call out section =========================
+void resetdigitalPins() {
+  for (int i = 0; i < ROWS; i++) {
+    digitalWrite(rowPins[i], LOW);
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // Debug code funcations =======================================
 void show_matrix_updated() {
+  Serial.println("---Updated matrix---");
   for (int i = 0; i < ROWS; i++) {
     for (int n = 0; n < COLS; n++) {
       Serial.print(matrix_array_updated[i][n]);
@@ -243,6 +259,7 @@ void show_matrix_updated() {
 }
 
 void show_matrix_curr() {
+  Serial.println("---Current matrix---");
   for (int i = 0; i < ROWS; i++) {
     for (int n = 0; n < COLS; n++) {
       Serial.print(matrix_array_curr[i][n]);
@@ -254,7 +271,7 @@ void show_matrix_curr() {
 }
 
 void show_matrix_prev() {
-  // Serial.println("---Previous matrix---");
+  Serial.println("---Previous matrix---");
   for (int i = 0; i < ROWS; i++) {
     for (int n = 0; n < COLS; n++) {
       Serial.print(matrix_array_prev[i][n]);
@@ -267,67 +284,254 @@ void show_matrix_prev() {
 
 
 
-// Add Picture Bracket 1
-void set_banner_bracket() {
-  matrix_array_updated[0][1] = 900;
-  matrix_array_updated[0][11] = 900;
-  matrix_array_updated[2][1] = 900;
-  matrix_array_updated[2][11] = 900;
+// Add Bracket 1
+void set_bracket_1() {
+matrix_array_updated[0][0] = 650;
+matrix_array_updated[0][11] = 650;
+matrix_array_updated[2][0] = 650;
+matrix_array_updated[2][11] = 650;
 }
 
-// Add Text Bracket 2
-void set_text_bracket_1() {
-  matrix_array_updated[3][1] = 500;
-  matrix_array_updated[3][5] = 500;
-  matrix_array_updated[6][1] = 500;
-  matrix_array_updated[6][5] = 500;
+// Add Bracket 2
+void set_bracket_2() {
+matrix_array_updated[3][0] = 350;
+matrix_array_updated[3][6] = 350;
+matrix_array_updated[4][0] = 350;
+matrix_array_updated[4][6] = 350;
 }
 
-// Add picture Bracket 3
-void set_picture_bracket() {
-  matrix_array_updated[3][6] = 1000;
-  matrix_array_updated[3][11] = 1000;
-  matrix_array_updated[6][6] = 1000;
-  matrix_array_updated[6][11] = 1000;
+// Add Bracket 3
+void set_bracket_3_1() {
+matrix_array_updated[5][0] = 450;
+matrix_array_updated[5][5] = 450;
+matrix_array_updated[7][0] = 450;
+matrix_array_updated[7][5] = 450;
 }
 
-// Add Text Bracket 4
-void set_text_bracket_2() {
-  matrix_array_updated[7][1] = 600;
-  matrix_array_updated[7][11] = 600;
-  matrix_array_updated[10][1] = 600;
-  matrix_array_updated[10][11] = 600;
+void set_bracket_3_1_remove() {
+matrix_array_updated[5][0] = 0;
+matrix_array_updated[5][5] = 0;
+matrix_array_updated[7][0] = 0;
+matrix_array_updated[7][5] = 0;
 }
 
+// Add Bracket 3
+void set_bracket_3_final() {
+matrix_array_updated[5][0] = 450;
+matrix_array_updated[5][5] = 450;
+matrix_array_updated[8][0] = 450;
+matrix_array_updated[8][5] = 450;
+}
 
+// Add Bracket 4
+void set_bracket_4_1() {
+matrix_array_updated[5][6] = 750;
+matrix_array_updated[5][9] = 750;
+matrix_array_updated[8][6] = 750;
+matrix_array_updated[8][9] = 750;
+}
+
+// Add Bracket 4
+void set_bracket_4_1_remove() {
+matrix_array_updated[5][6] = 0;
+matrix_array_updated[5][9] = 0;
+matrix_array_updated[8][6] = 0;
+matrix_array_updated[8][9] = 0;
+}
+
+// Add Bracket 4
+void set_bracket_4_final() {
+matrix_array_updated[5][6] = 750;
+matrix_array_updated[5][11] = 750;
+matrix_array_updated[8][6] = 750;
+matrix_array_updated[8][11] = 750;
+}
+
+// Add Bracket 5
+void set_bracket_5_1() {
+matrix_array_updated[10][2] = 550;
+matrix_array_updated[10][5] = 550;
+matrix_array_updated[11][2] = 550;
+matrix_array_updated[11][5] = 550;
+}
+
+void set_bracket_5_1_remove() {
+matrix_array_updated[10][2] = 0;
+matrix_array_updated[10][5] = 0;
+matrix_array_updated[11][2] = 0;
+matrix_array_updated[11][5] = 0;
+}
+
+void set_bracket_5_2() {
+matrix_array_updated[10][0] = 550;
+matrix_array_updated[10][5] = 550;
+matrix_array_updated[11][0] = 550;
+matrix_array_updated[11][5] = 550;
+}
+
+void set_bracket_5_2_remove() {
+matrix_array_updated[10][0] = 0;
+matrix_array_updated[10][5] = 0;
+matrix_array_updated[11][0] = 0;
+matrix_array_updated[11][5] = 0;
+}
+
+// Add Bracket 5
+void set_bracket_5_3() {
+matrix_array_updated[9][0] = 550;
+matrix_array_updated[9][5] = 550;
+matrix_array_updated[12][0] = 550;
+matrix_array_updated[12][5] = 550;
+}
+
+// Add Bracket 6
+void set_bracket_6_1() {
+matrix_array_updated[9][6] = 850;
+matrix_array_updated[9][11] = 850;
+matrix_array_updated[12][6] = 850;
+matrix_array_updated[12][11] = 850;
+}
+
+// Add Bracket 7
+void set_bracket_7() {
+matrix_array_updated[13][3] = 950;
+matrix_array_updated[13][8] = 950;
+matrix_array_updated[15][3] = 950;
+matrix_array_updated[15][8] = 950;
+}
+
+// Add Bracket 5
+void set_bracket_5_3_remove() {
+matrix_array_updated[9][0] = 0;
+matrix_array_updated[9][5] = 0;
+matrix_array_updated[12][0] = 0;
+matrix_array_updated[12][5] = 0;
+}
+
+// Add Bracket 6
+void set_bracket_6_1_remove() {
+matrix_array_updated[9][6] = 0;
+matrix_array_updated[9][11] = 0;
+matrix_array_updated[12][6] = 0;
+matrix_array_updated[12][11] = 0;
+}
+
+void set_bracket_6_final() {
+matrix_array_updated[9][0] = 850;
+matrix_array_updated[9][5] = 850;
+matrix_array_updated[12][0] = 850;
+matrix_array_updated[12][5] = 850;
+}
+
+void set_bracket_5_final() {
+matrix_array_updated[9][6] = 550;
+matrix_array_updated[9][11] = 550;
+matrix_array_updated[12][6] = 550;
+matrix_array_updated[12][11] = 550;
+}
 
 
 //   This code is used for testing software without physical baseboard.
 void loop() {
-  delay(3000);
-  // Adding first bracket
-  set_banner_bracket();
-  delay(1000);
-  detect();
   delay(5000);
 
-  // Adding second bracket
-  set_text_bracket_1();
+
+  set_bracket_1();
   delay(1000);
   detect();
-  delay(5000);
+  delay(40000);
 
-  //
-  set_picture_bracket();
+  set_bracket_2();
   delay(1000);
   detect();
-  delay(5000);
+  delay(60000);
 
-  set_text_bracket_2();
+  set_bracket_3_1();
   delay(1000);
   detect();
-  delay(5000);
+  delay(60000);
 
+  set_bracket_3_1_remove();
+  delay(1000);
+  detect();
+  delay(20000);
+
+  set_bracket_3_final();
+  delay(1000);
+  detect();
+  delay(40000);
+
+  set_bracket_4_1();
+  delay(1000);
+  detect();
+  delay(40000);
+
+  set_bracket_4_1_remove();
+  delay(1000);
+  detect();
+  delay(20000);
+
+  set_bracket_4_final();
+  delay(1000);
+  detect();
+  delay(40000);
+  
+  set_bracket_5_1();
+  delay(1000);
+  detect();
+  delay(40000);
+
+  set_bracket_5_1_remove();
+  delay(1000);
+  detect();
+  delay(20000);
+
+  set_bracket_5_2();
+  delay(1000);
+  detect();
+  delay(40000);
+
+  set_bracket_5_2_remove();
+  delay(1000);
+  detect();
+  delay(20000);
+
+  set_bracket_5_3();
+  delay(1000);
+  detect();
+  delay(40000);
+
+  set_bracket_6_1();
+  delay(1000);
+  detect();
+  delay(60000);
+
+  set_bracket_7();
+  delay(1000);
+  detect();
+  delay(40000);
+
+  set_bracket_5_3_remove();
+  delay(1000);
+  detect();
+  delay(20000);
+
+  set_bracket_6_1_remove();
+  delay(1000);
+  detect();
+  delay(20000);
+
+  set_bracket_6_final();
+  delay(1000);
+  detect();
+  delay(40000);
+
+  set_bracket_5_final();
+  delay(1000);
+  detect();
+  delay(40000);
 
   delay(10000000);
 }
+
+
