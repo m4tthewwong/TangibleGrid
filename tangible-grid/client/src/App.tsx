@@ -95,8 +95,8 @@ const App = () => {
 
         arduinoDataArray.forEach(data => {
             if (data.status === "Added" || data.status === "Modified") {
-                const boxWidth = containerDimensions.width * ((data.width + 1) / 12);
-                const boxHeight = containerDimensions.height * ((data.length + 1) / 16);
+                const boxWidth = containerDimensions.width * ((data.width) / 12);
+                const boxHeight = containerDimensions.height * ((data.length) / 16);
                 filledArea += boxWidth * boxHeight;
             }
         });
@@ -110,7 +110,7 @@ const App = () => {
         let speechText = '';
 
         // General bracket information
-        const location = `at row ${bracket.top_left_row + 1} and column ${bracket.top_left_col + 1}`;
+        const location = `at row ${bracket.top_left_row} and column ${bracket.top_left_col}`;
         const size = `with a width of ${bracket.width} and height of ${bracket.length}`;
 
         switch (bracket.status) {
